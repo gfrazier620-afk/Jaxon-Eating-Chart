@@ -35,6 +35,10 @@
     padding: 40px 24px 80px;
   }
 
+  @media (max-width: 480px){
+    .wrap{ padding: 24px 14px 60px; }
+  }
+
   /* ---------- Header ---------- */
   header.top{
     display:flex;
@@ -67,6 +71,34 @@
   }
 
   /* ---------- Tabs ---------- */
+  .tabs-bar{ display:none; }
+
+  .menu-toggle{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    width: 38px; height: 38px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap: 4px;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .menu-toggle span{
+    display:block;
+    width: 18px; height: 2px;
+    background: var(--ink);
+    border-radius: 1px;
+  }
+
+  .current-tab-label{
+    font-family: 'Domine', serif;
+    font-size: 16px;
+    color: var(--ink);
+  }
+
   .tabs{
     display:flex;
     gap: 4px;
@@ -101,6 +133,42 @@
     padding: 1px 7px;
     margin-left: 6px;
     font-weight: 700;
+  }
+
+  @media (max-width: 640px){
+    .tabs-bar{
+      display:flex;
+      align-items:center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .tabs{
+      display:none;
+      flex-direction: column;
+      gap: 2px;
+      border-bottom: none;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 6px;
+      margin-bottom: 22px;
+    }
+
+    .tabs.open{ display:flex; }
+
+    .tab-btn{
+      margin-right: 0;
+      text-align:left;
+      padding: 11px 12px;
+      border-radius: 6px;
+      top: 0;
+    }
+
+    .tab-btn.active{
+      background: var(--fern-dim);
+      border-bottom: none;
+    }
   }
 
   .panel{ display:none; }
@@ -188,6 +256,14 @@
     width:100%;
     border-collapse: collapse;
     font-size: 14px;
+  }
+
+  .table-scroll{
+    overflow-x: auto;
+  }
+
+  @media (max-width: 480px){
+    .log-table{ min-width: 480px; }
   }
 
   .log-table th{
@@ -315,6 +391,12 @@
     gap: 8px;
     margin-top: 12px;
     align-items: start;
+  }
+
+  @media (max-width: 480px){
+    .food-grid{
+      grid-template-columns: 1fr;
+    }
   }
 
   .food-row{

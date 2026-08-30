@@ -21,7 +21,14 @@
     <span id="age-badge"></span>
   </header>
 
-  <div class="tabs">
+  <div class="tabs-bar">
+    <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <span class="current-tab-label" id="current-tab-label">Foods</span>
+  </div>
+
+  <div class="tabs" id="tabs">
     <button class="tab-btn active" data-tab="foods" type="button">Foods</button>
     <button class="tab-btn" data-tab="calendar" type="button">Calendar</button>
     <button class="tab-btn" data-tab="growth" type="button">Growth</button>
@@ -93,19 +100,21 @@
 
     <div class="chart-card">
       <h3>Growth log</h3>
-      <table class="log-table">
-        <thead>
-          <tr>
-            <th class="date-col">Date</th>
-            <th class="num-col">lb</th>
-            <th class="num-col">oz</th>
-            <th class="num-col">Length (in)</th>
-            <th class="num-col">Head (in)</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="growth-tbody"></tbody>
-      </table>
+      <div class="table-scroll">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th class="date-col">Date</th>
+              <th class="num-col">lb</th>
+              <th class="num-col">oz</th>
+              <th class="num-col">Length (in)</th>
+              <th class="num-col">Head (in)</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="growth-tbody"></tbody>
+        </table>
+      </div>
       <button class="add-entry-btn" id="add-entry-btn" type="button">+ Add growth entry</button>
     </div>
   </div>

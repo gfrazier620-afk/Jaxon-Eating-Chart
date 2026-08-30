@@ -219,12 +219,25 @@ function saveGrowthLog(entries){
 }
 
 /* ---------------- Tabs ---------------- */
+const TAB_LABELS = { foods: 'Foods', calendar: 'Calendar', growth: 'Growth', allergies: 'Allergies' };
+const menuToggle = document.getElementById('menu-toggle');
+const tabsEl = document.getElementById('tabs');
+const currentTabLabel = document.getElementById('current-tab-label');
+
+menuToggle.addEventListener('click', () => {
+  const isOpen = tabsEl.classList.toggle('open');
+  menuToggle.setAttribute('aria-expanded', String(isOpen));
+});
+
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    currentTabLabel.textContent = TAB_LABELS[btn.dataset.tab] || '';
+    tabsEl.classList.remove('open');
+    menuToggle.setAttribute('aria-expanded', 'false');
     if (btn.dataset.tab === 'growth') renderGrowth();
     if (btn.dataset.tab === 'calendar') renderCalendar();
   });
