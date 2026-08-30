@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaxon's First Foods</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Domine:wght@500;600;700&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F1F4EC;
+    --surface: #FFFFFF;
+    --ink: #2E3A46;
+    --ink-soft: #5B6B72;
+    --line: #DDE3D6;
+    --fern: #4F7942;
+    --fern-dim: #E4ECDD;
+    --carrot: #D9643A;
+    --carrot-dim: #FBE6DB;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Karla', sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3{
+    font-family: 'Domine', serif;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .wrap{
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* ---------- Header ---------- */
+  header.top{
+    display:flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+
+  header.top h1{
+    font-size: clamp(28px, 4vw, 38px);
+    color: var(--ink);
+  }
+
+  header.top p{
+    margin: 6px 0 0;
+    color: var(--ink-soft);
+    font-size: 15px;
+  }
+
+  #age-badge{
+    font-size: 14px;
+    color: var(--fern);
+    background: var(--fern-dim);
+    border-radius: 999px;
+    padding: 6px 14px;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+
+  /* ---------- Growth ticket ---------- */
+  .ticket{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-bottom: 28px;
+    position: relative;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 32px;
+  }
+
+  .ticket::before{
+    content:"";
+    position:absolute;
+    left: 50%;
+    top: 20px;
+    bottom: 20px;
+    border-left: 1px dashed var(--line);
+  }
+
+  @media (max-width: 560px){
+    .ticket{ grid-template-columns: 1fr; }
+    .ticket::before{ display:none; }
+  }
+
+  .ticket .col{ display:flex; flex-direction:column; gap: 4px; }
+
+  .ticket .col-label{
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--ink-soft);
+  }
+
+  .ticket .stat-line{
+    font-family: 'Domine', serif;
+    font-size: 20px;
+    color: var(--ink);
+  }
+
+  .ticket .stat-sub{
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Progress ---------- */
+  .progress-row{
+    display:flex;
+    align-items:center;
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+
+  .progress-track{
+    flex:1;
+    height: 10px;
+    background: var(--fern-dim);
+    border-radius: 999px;
+    overflow:hidden;
+  }
+
+  .progress-fill{
+    height:100%;
+    background: var(--fern);
+    border-radius: 999px;
+    transition: width 0.3s ease;
+    width: 0%;
+  }
+
+  .progress-count{
+    font-family:'Domine', serif;
+    font-size: 15px;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+
+  /* ---------- Categories ---------- */
+  .category{
+    margin-bottom: 30px;
+    border-left: 3px solid var(--cat-color, var(--fern));
+    padding-left: 18px;
+  }
+
+  .category h2{
+    font-size: 18px;
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .category h2 .dot{
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--cat-color, var(--fern));
+    display:inline-block;
+    flex-shrink:0;
+  }
+
+  .category .count{
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-weight: 400;
+    font-family:'Karla', sans-serif;
+  }
+
+  .food-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .food-row{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .food-row.checked{
+    background: var(--fern-dim);
+    border-color: var(--fern);
+  }
+
+  .food-row input[type="checkbox"]{
+    width: 18px; height: 18px;
+    accent-color: var(--fern);
+    flex-shrink:0;
+    cursor:pointer;
+  }
+
+  .food-row label{
+    flex:1;
+    font-size: 14.5px;
+    cursor:pointer;
+    user-select:none;
+  }
+
+  .food-row.checked label{
+    color: var(--ink);
+  }
+
+  .food-row .tried-date{
+    font-size: 12px;
+    border: none;
+    background: transparent;
+    color: var(--ink-soft);
+    width: 108px;
+    text-align:right;
+    cursor:pointer;
+  }
+
+  .food-row.checked .tried-date{ color: var(--fern); font-weight: 600; }
+
+  /* ---------- Footer note ---------- */
+  .note{
+    margin-top: 40px;
+    padding: 18px 20px;
+    background: var(--carrot-dim);
+    border-left: 3px solid var(--carrot);
+    border-radius: 6px;
+    font-size: 13.5px;
+    color: var(--ink);
+  }
+
+  .note strong{ color: var(--carrot); }
+
+  .actions{
+    margin-top: 18px;
+    display:flex;
+    justify-content:flex-end;
+  }
+
+  .reset-btn{
+    font-family:'Karla', sans-serif;
+    font-size: 13px;
+    color: var(--ink-soft);
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor:pointer;
+  }
+
+  .reset-btn:hover{ border-color: var(--carrot); color: var(--carrot); }
+
+  :focus-visible{
+    outline: 2px solid var(--fern);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .progress-fill{ transition:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>Jaxon's First Foods</h1>
+      <p>Tracking every taste from six months on.</p>
+    </div>
+    <span id="age-badge"></span>
+  </header>
+
+  <div class="ticket">
+    <div class="col">
+      <span class="col-label">At birth · Feb 23, 2026</span>
+      <span class="stat-line">6 lb 11 oz</span>
+      <span class="stat-sub">19.5 in long</span>
+    </div>
+    <div class="col">
+      <span class="col-label">Latest check-in</span>
+      <span class="stat-line">13 lb 14 oz</span>
+      <span class="stat-sub">25 in long</span>
+    </div>
+  </div>
+
+  <div class="progress-row">
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    <span class="progress-count" id="progress-count">0 of 100 tried</span>
+  </div>
+
+  <div id="categories"></div>
+
+  <div class="note">
+    <strong>Before you start:</strong> introduce one new food at a time (waiting a couple of days between new allergens like egg, dairy, peanut, tree nuts, soy, wheat, fish, and shellfish) and watch for any reaction. Skip honey and unpasteurized foods before age one, and avoid choking hazards like whole nuts, whole grapes, or hard raw pieces &mdash; serve mashed, thinly sliced, or ground instead. When in doubt, check with Jaxon's pediatrician.
+  </div>
+
+  <div class="actions">
+    <button class="reset-btn" id="reset-btn" type="button">Reset all checkmarks</button>
+  </div>
+
+</div>
+
+<script>
+  const BIRTH_DATE = new Date(2026, 1, 23); // Feb 23, 2026
+  const STORAGE_KEY = 'jaxon-first-foods-v1';
+
+  const FOOD_DATA = [
+    { name: 'Fruits', color: '#D9643A', items: [
+      'Banana','Avocado','Apple','Pear','Peach','Plum','Mango','Blueberries',
+      'Strawberries','Raspberries','Watermelon','Cantaloupe','Kiwi','Papaya','Pineapple'
+    ]},
+    { name: 'Vegetables', color: '#4F7942', items: [
+      'Sweet potato','Butternut squash','Carrot','Green beans','Peas','Broccoli',
+      'Cauliflower','Zucchini','Pumpkin','Spinach','Kale','Beet','Asparagus',
+      'Bell pepper','Cucumber','Corn','Tomato','Eggplant','Parsnip','Turnip'
+    ]},
+    { name: 'Grains & Starches', color: '#B98B4E', items: [
+      'Oatmeal','Rice','Rice cereal','Quinoa','Barley','Whole wheat pasta',
+      'Whole grain bread','Couscous','Farro','Millet'
+    ]},
+    { name: 'Proteins', color: '#8B3A62', items: [
+      'Chicken','Turkey','Beef','Pork','Salmon','Cod','Tuna (light, low-mercury)',
+      'Shrimp','Lamb','Duck','Sardines','Trout','Tilapia','Egg (whole, cooked)','Egg yolk'
+    ]},
+    { name: 'Legumes', color: '#8A8B3E', items: [
+      'Lentils','Black beans','Chickpeas','Kidney beans','Pinto beans','Edamame',
+      'Split peas','Navy beans','Lima beans','White beans'
+    ]},
+    { name: 'Dairy', color: '#4A7A96', items: [
+      'Plain whole-milk yogurt','Cottage cheese','Cheddar cheese','Mozzarella cheese',
+      'Cream cheese','Ricotta cheese','Parmesan cheese','Kefir'
+    ]},
+    { name: 'Nuts & Seeds (as smooth butters)', color: '#6B4A2F', items: [
+      'Peanut butter (thinned)','Almond butter','Cashew butter','Sunflower seed butter',
+      'Chia seeds','Ground flaxseed','Tahini (sesame paste)','Hemp seeds'
+    ]},
+    { name: 'Herbs & Spices', color: '#2E7D6B', items: [
+      'Cinnamon','Basil','Oregano','Garlic','Ginger','Cumin','Turmeric','Mint','Dill','Parsley'
+    ]},
+    { name: 'Other first foods', color: '#5B6B72', items: [
+      'Tofu','Hummus','Unsweetened applesauce','Whole grain crackers'
+    ]}
+  ];
+
+  function slug(s){
+    return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  }
+
+  function loadState(){
+    try{
+      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    }catch(e){ return {}; }
+  }
+
+  function saveState(state){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function todayISO(){
+    const d = new Date();
+    return d.toISOString().slice(0,10);
+  }
+
+  function renderAge(){
+    const now = new Date();
+    let months = (now.getFullYear() - BIRTH_DATE.getFullYear()) * 12 + (now.getMonth() - BIRTH_DATE.getMonth());
+    const refDate = new Date(BIRTH_DATE);
+    refDate.setMonth(refDate.getMonth() + months);
+    if (refDate > now){ months -= 1; refDate.setMonth(refDate.getMonth() - 1); }
+    const dayDiffMs = now - refDate;
+    const days = Math.floor(dayDiffMs / 86400000);
+    const weeks = Math.floor(days / 7);
+    let text = months + (months === 1 ? ' month' : ' months');
+    if (weeks > 0) text += ', ' + weeks + (weeks === 1 ? ' week' : ' weeks');
+    document.getElementById('age-badge').textContent = text + ' old';
+  }
+
+  function renderCategories(){
+    const state = loadState();
+    const container = document.getElementById('categories');
+    container.innerHTML = '';
+    let totalChecked = 0;
+    let totalFoods = 0;
+
+    FOOD_DATA.forEach(cat => {
+      totalFoods += cat.items.length;
+      const section = document.createElement('div');
+      section.className = 'category';
+      section.style.setProperty('--cat-color', cat.color);
+
+      const heading = document.createElement('h2');
+      heading.innerHTML = '<span class="dot"></span>' + cat.name +
+        ' <span class="count" data-count="' + cat.name + '"></span>';
+      section.appendChild(heading);
+
+      const grid = document.createElement('div');
+      grid.className = 'food-grid';
+
+      cat.items.forEach(food => {
+        const id = slug(cat.name + '-' + food);
+        const entry = state[id];
+        const isChecked = !!(entry && entry.checked);
+        if (isChecked) totalChecked++;
+
+        const row = document.createElement('div');
+        row.className = 'food-row' + (isChecked ? ' checked' : '');
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = id;
+        checkbox.checked = isChecked;
+
+        const label = document.createElement('label');
+        label.htmlFor = id;
+        label.textContent = food;
+
+        const dateInput = document.createElement('input');
+        dateInput.type = 'date';
+        dateInput.className = 'tried-date';
+        dateInput.value = (entry && entry.date) ? entry.date : '';
+        dateInput.style.visibility = isChecked ? 'visible' : 'hidden';
+
+        checkbox.addEventListener('change', () => {
+          const st = loadState();
+          if (checkbox.checked){
+            const d = dateInput.value || todayISO();
+            dateInput.value = d;
+            dateInput.style.visibility = 'visible';
+            st[id] = { checked: true, date: d };
+            row.classList.add('checked');
+          } else {
+            dateInput.style.visibility = 'hidden';
+            st[id] = { checked: false, date: dateInput.value };
+            row.classList.remove('checked');
+          }
+          saveState(st);
+          updateProgress();
+        });
+
+        dateInput.addEventListener('change', () => {
+          const st = loadState();
+          st[id] = { checked: checkbox.checked, date: dateInput.value };
+          saveState(st);
+        });
+
+        row.appendChild(checkbox);
+        row.appendChild(label);
+        row.appendChild(dateInput);
+        grid.appendChild(row);
+      });
+
+      section.appendChild(grid);
+      container.appendChild(section);
+    });
+
+    // fill in per-category counts
+    document.querySelectorAll('[data-count]').forEach(span => {
+      const catName = span.getAttribute('data-count');
+      const cat = FOOD_DATA.find(c => c.name === catName);
+      const state2 = loadState();
+      const checkedInCat = cat.items.filter(food =>
+        state2[slug(cat.name + '-' + food)] && state2[slug(cat.name + '-' + food)].checked
+      ).length;
+      span.textContent = checkedInCat + '/' + cat.items.length;
+    });
+
+    updateProgress();
+  }
+
+  function updateProgress(){
+    const state = loadState();
+    let total = 0, checked = 0;
+    FOOD_DATA.forEach(cat => cat.items.forEach(food => {
+      total++;
+      const id = slug(cat.name + '-' + food);
+      if (state[id] && state[id].checked) checked++;
+    }));
+    document.getElementById('progress-count').textContent = checked + ' of ' + total + ' tried';
+    document.getElementById('progress-fill').style.width = (checked / total * 100) + '%';
+    document.querySelectorAll('[data-count]').forEach(span => {
+      const catName = span.getAttribute('data-count');
+      const cat = FOOD_DATA.find(c => c.name === catName);
+      const checkedInCat = cat.items.filter(food =>
+        state[slug(cat.name + '-' + food)] && state[slug(cat.name + '-' + food)].checked
+      ).length;
+      span.textContent = checkedInCat + '/' + cat.items.length;
+    });
+  }
+
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    if (confirm("Clear every checkmark and date? This can't be undone.")){
+      localStorage.removeItem(STORAGE_KEY);
+      renderCategories();
+    }
+  });
+
+  renderAge();
+  renderCategories();
+</script>
+</body>
+</html>
