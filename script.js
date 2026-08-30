@@ -224,6 +224,75 @@ function todayISO(){
   return new Date().toISOString().slice(0,10);
 }
 
+function compressImage(file, maxDim, quality){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read file'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Could not load image'));
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > h && w > maxDim){ h = Math.round(h * (maxDim / w)); w = maxDim; }
+        else if (h > maxDim){ w = Math.round(w * (maxDim / h)); h = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Shared photo control builder, used by both food and milestone detail panels.
+// onSave(dataUrlOrNull) is called with the compressed photo, or null on removal.
+function buildPhotoRow(photo, onSave){
+  const row = document.createElement('div');
+  row.className = 'detail-row photo-controls';
+
+  if (photo){
+    const img = document.createElement('img');
+    img.className = 'photo-thumb';
+    img.src = photo;
+    img.alt = 'Photo';
+    row.appendChild(img);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'photo-remove-btn';
+    removeBtn.textContent = 'Remove photo';
+    removeBtn.addEventListener('click', () => onSave(null));
+    row.appendChild(removeBtn);
+  } else {
+    const label = document.createElement('label');
+    label.className = 'photo-add-label';
+    label.textContent = '\u{1F4F7} Add photo';
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.addEventListener('change', async () => {
+      const file = input.files[0];
+      if (!file) return;
+      try{
+        const dataUrl = await compressImage(file, 240, 0.55);
+        if (dataUrl.length > 60000){
+          alert("That photo is still too large after compressing \u2014 try a different one.");
+          return;
+        }
+        onSave(dataUrl);
+      }catch(err){
+        alert("Couldn't process that photo. Try a different one.");
+      }
+    });
+    label.appendChild(input);
+    row.appendChild(label);
+  }
+
+  return row;
+}
+
 function loadFoodState(){
   try{ return JSON.parse(localStorage.getItem(FOOD_STORAGE_KEY)) || {}; }
   catch(e){ return {}; }
@@ -370,6 +439,7 @@ function startSync(){
     if (document.getElementById('panel-calendar').classList.contains('active')) renderCalendar();
     if (document.getElementById('panel-milestones').classList.contains('active')) renderMilestones();
     if (document.getElementById('panel-stats').classList.contains('active')) renderStats();
+    if (document.getElementById('panel-timeline').classList.contains('active')) renderTimeline();
   }, (err) => {
     console.warn('Sync unavailable:', err.message);
     setSyncStatus('error', "Couldn't connect \u2014 check your Firebase config and Firestore rules.");
@@ -377,7 +447,7 @@ function startSync(){
 }
 
 /* ---------------- Tabs ---------------- */
-const TAB_LABELS = { foods: 'Foods', milestones: 'Milestones', calendar: 'Calendar', growth: 'Growth', stats: 'Stats', allergies: 'Allergies' };
+const TAB_LABELS = { foods: 'Foods', milestones: 'Milestones', timeline: 'Timeline', calendar: 'Calendar', growth: 'Growth', stats: 'Stats', allergies: 'Allergies' };
 const menuToggle = document.getElementById('menu-toggle');
 const tabsEl = document.getElementById('tabs');
 const currentTabLabel = document.getElementById('current-tab-label');
@@ -400,7 +470,24 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'calendar') renderCalendar();
     if (btn.dataset.tab === 'milestones') renderMilestones();
     if (btn.dataset.tab === 'stats') renderStats();
+    if (btn.dataset.tab === 'timeline') renderTimeline();
   });
+});
+
+/* ---------------- Dark mode ---------------- */
+const THEME_KEY = 'jaxon-theme';
+function loadTheme(){
+  return localStorage.getItem(THEME_KEY) || 'light';
+}
+function applyTheme(theme){
+  document.body.classList.toggle('dark', theme === 'dark');
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = theme === 'dark' ? '\u2600\ufe0f Light mode' : '\u{1F319} Dark mode';
+}
+document.getElementById('theme-toggle').addEventListener('click', () => {
+  const next = loadTheme() === 'dark' ? 'light' : 'dark';
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
 });
 
 /* ---------------- Who's logging ---------------- */
@@ -508,6 +595,74 @@ function renderCategories(){
   }, state));
 
   refreshCounts();
+  renderTryNext();
+}
+
+function renderTryNext(){
+  const state = loadFoodState();
+  const foodInfo = buildFoodInfo();
+
+  const priorityNames = [
+    'Egg (whole, cooked)', 'Egg yolk', 'Peanut butter (thinned)', 'Almond butter',
+    'Cashew butter', 'Tahini (sesame paste)', 'Edamame', 'Tofu',
+    'Plain whole-milk yogurt', 'Cheddar cheese', 'Whole wheat pasta', 'Whole grain bread',
+    'Shrimp', 'Salmon', 'Cod'
+  ];
+
+  const nameToId = {};
+  FOOD_DATA.forEach(cat => cat.items.forEach(f => { nameToId[f.name] = slug(cat.name + '-' + f.name); }));
+
+  let suggestions = priorityNames
+    .map(name => ({ id: nameToId[name], name }))
+    .filter(s => s.id && !(state[s.id] && state[s.id].checked));
+
+  if (suggestions.length < 5){
+    const already = new Set(suggestions.map(s => s.id));
+    FOOD_DATA.forEach(cat => cat.items.forEach(f => {
+      if (suggestions.length >= 5) return;
+      const id = slug(cat.name + '-' + f.name);
+      if (!already.has(id) && !(state[id] && state[id].checked)){
+        suggestions.push({ id, name: f.name });
+        already.add(id);
+      }
+    }));
+  }
+  suggestions = suggestions.slice(0, 5);
+
+  const section = document.getElementById('try-next-section');
+  const wrap = document.getElementById('try-next-list');
+
+  if (!suggestions.length){
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = '';
+  wrap.innerHTML = '';
+
+  suggestions.forEach(s => {
+    const info = foodInfo[s.id];
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'try-next-chip';
+    chip.innerHTML = '<span class="tn-emoji">' + (info ? info.emoji : '') + '</span><span>' + s.name + '</span>';
+    chip.addEventListener('click', () => {
+      const st = loadFoodState();
+      const e = st[s.id] || {};
+      e.checked = true;
+      if (!e.date) e.date = todayISO();
+      if (getCurrentUser()) e.loggedBy = getCurrentUser();
+      st[s.id] = e;
+      saveFoodState(st);
+      expandedId = s.id;
+      renderCategories();
+      renderAllergies();
+      setTimeout(() => {
+        const rowEl = document.querySelector('.food-row[data-id="' + CSS.escape(s.id) + '"]');
+        if (rowEl) rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
+    });
+    wrap.appendChild(chip);
+  });
 }
 
 function buildDynamicCategory(opts, state){
@@ -669,6 +824,8 @@ function buildFoodDetail(id, entry){
     byRow.appendChild(byVal);
     detail.appendChild(byRow);
   }
+
+  detail.appendChild(buildPhotoRow(entry.photo, (dataUrlOrNull) => updateFoodEntry(id, { photo: dataUrlOrNull })));
 
   // reaction row
   const reactRow = document.createElement('div');
@@ -941,6 +1098,8 @@ function buildMilestoneDetail(id, entry){
     detail.appendChild(byRow);
   }
 
+  detail.appendChild(buildPhotoRow(entry.photo, (dataUrlOrNull) => updateMilestoneEntry(id, { photo: dataUrlOrNull })));
+
   const noteRow = document.createElement('div');
   noteRow.className = 'detail-row';
   const noteInput = document.createElement('input');
@@ -1109,6 +1268,91 @@ document.getElementById('cal-next').addEventListener('click', () => {
   calViewDate = new Date(calViewDate.getFullYear(), calViewDate.getMonth() + 1, 1);
   renderCalendar();
 });
+
+/* ---------------- Timeline tab ---------------- */
+function reactionLabel(key){
+  const r = REACTIONS.find(x => x.key === key);
+  return r ? (r.emoji + ' ' + r.label) : '';
+}
+
+function renderTimeline(){
+  const state = loadFoodState();
+  const foodInfo = buildFoodInfo();
+  const milestoneState = loadMilestoneState();
+  const milestoneInfo = buildMilestoneInfo();
+  const growth = loadGrowthLog();
+
+  const events = [];
+
+  Object.keys(state).forEach(id => {
+    const e = state[id];
+    const info = foodInfo[id];
+    if (e && e.checked && e.date && info){
+      events.push({
+        date: e.date,
+        icon: info.emoji,
+        text: 'Tried ' + info.name,
+        sub: [e.reaction ? reactionLabel(e.reaction) : '', e.allergic ? 'Reaction noted' : ''].filter(Boolean).join(' \u00b7 '),
+        loggedBy: e.loggedBy
+      });
+    }
+  });
+
+  Object.keys(milestoneState).forEach(id => {
+    const e = milestoneState[id];
+    const info = milestoneInfo[id];
+    if (e && e.achieved && e.date && info){
+      events.push({
+        date: e.date,
+        icon: '\u{1F31F}',
+        text: info.name,
+        sub: e.note || '',
+        loggedBy: e.loggedBy
+      });
+    }
+  });
+
+  growth.forEach(g => {
+    events.push({
+      date: g.date,
+      icon: '\u{1F4CF}',
+      text: g.weightLb + ' lb ' + g.weightOz + ' oz, ' + g.lengthIn + ' in' + (g.headIn ? ', head ' + g.headIn + ' in' : ''),
+      sub: 'Growth check-in',
+      loggedBy: null
+    });
+  });
+
+  events.sort((a, b) => b.date.localeCompare(a.date));
+
+  const container = document.getElementById('timeline-list');
+  container.innerHTML = '';
+
+  if (!events.length){
+    container.innerHTML = '<div class="empty-state">Nothing logged yet \u2014 check off a food or milestone to start the timeline.</div>';
+    return;
+  }
+
+  let lastDate = null;
+  events.forEach(ev => {
+    if (ev.date !== lastDate){
+      const header = document.createElement('div');
+      header.className = 'timeline-date';
+      header.textContent = new Date(ev.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+      container.appendChild(header);
+      lastDate = ev.date;
+    }
+
+    const item = document.createElement('div');
+    item.className = 'timeline-item';
+    const subParts = [ev.sub, ev.loggedBy].filter(Boolean).join(' \u00b7 ');
+    item.innerHTML =
+      '<span class="tl-icon">' + ev.icon + '</span>' +
+      '<div class="tl-body"><div class="tl-text">' + ev.text + '</div>' +
+      (subParts ? '<div class="tl-sub">' + subParts + '</div>' : '') +
+      '</div>';
+    container.appendChild(item);
+  });
+}
 
 /* ---------------- Growth tab ---------------- */
 function lbOzToDecimal(lb, oz){ return (Number(lb)||0) + (Number(oz)||0)/16; }
@@ -1508,6 +1752,7 @@ document.getElementById('print-btn').addEventListener('click', () => {
 });
 
 /* ---------------- Init ---------------- */
+applyTheme(loadTheme());
 renderAge();
 renderCategories();
 renderAllergies();

@@ -32,6 +32,7 @@
       <button class="user-btn" id="user-other-btn" type="button">Other</button>
     </div>
     <div class="sync-bar-actions">
+      <button class="sync-toggle-btn" id="theme-toggle" type="button">🌙 Dark mode</button>
       <button class="sync-toggle-btn" id="print-btn" type="button">Print keepsake</button>
       <button class="sync-toggle-btn" id="sync-toggle" type="button">Backup / restore data</button>
     </div>
@@ -64,6 +65,7 @@
   <div class="tabs" id="tabs">
     <button class="tab-btn active" data-tab="foods" type="button">Foods</button>
     <button class="tab-btn" data-tab="milestones" type="button">Milestones</button>
+    <button class="tab-btn" data-tab="timeline" type="button">Timeline</button>
     <button class="tab-btn" data-tab="calendar" type="button">Calendar</button>
     <button class="tab-btn" data-tab="growth" type="button">Growth</button>
     <button class="tab-btn" data-tab="stats" type="button">Stats</button>
@@ -72,6 +74,11 @@
 
   <!-- FOODS PANEL -->
   <div class="panel active" id="panel-foods">
+    <div class="try-next-section" id="try-next-section">
+      <h3 class="try-next-title">Try next</h3>
+      <div class="try-next-list" id="try-next-list"></div>
+    </div>
+
     <div class="progress-row">
       <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
       <span class="progress-count" id="progress-count">0 of 100 tried</span>
@@ -109,6 +116,11 @@
     </div>
     <div class="cal-grid" id="cal-grid"></div>
     <p class="cal-hint">Tap a food's checkmark on the Foods tab to log the date it was tried &mdash; it'll show up here.</p>
+  </div>
+
+  <!-- TIMELINE PANEL -->
+  <div class="panel" id="panel-timeline">
+    <div id="timeline-list"></div>
   </div>
 
   <!-- GROWTH PANEL -->
