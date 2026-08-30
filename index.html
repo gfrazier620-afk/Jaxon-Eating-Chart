@@ -9,6 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Domine:wght@500;600;700&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -20,6 +23,27 @@
     </div>
     <span id="age-badge"></span>
   </header>
+
+  <div class="sync-bar">
+    <button class="sync-toggle-btn" id="sync-toggle" type="button">Backup / restore data</button>
+  </div>
+
+  <div class="sync-panel" id="sync-panel" hidden>
+    <p class="sync-status" id="sync-status">Not connected yet.</p>
+    <p>Once live sync is connected, anything checked off on one phone shows up on the other automatically. If it's not connected, you can still move data over manually:</p>
+    <ol>
+      <li>On the device that has the data, tap <strong>Download backup</strong> below.</li>
+      <li>Send that file to your other device (email, text, AirDrop, cloud drive &mdash; whatever's easiest).</li>
+      <li>Open this tracker on the other device, tap <strong>Restore from backup</strong>, and pick the file.</li>
+    </ol>
+    <p class="sync-warning">Restoring replaces whatever is already saved on that device, so download a backup from it first if it has anything you want to keep.</p>
+    <div class="sync-actions">
+      <button class="add-entry-btn" id="export-btn" type="button">Download backup (.json)</button>
+      <label class="restore-label" for="import-file">Restore from backup
+        <input type="file" id="import-file" accept="application/json">
+      </label>
+    </div>
+  </div>
 
   <div class="tabs-bar">
     <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">

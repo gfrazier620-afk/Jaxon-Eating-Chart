@@ -177,8 +177,12 @@ function loadFoodState(){
   try{ return JSON.parse(localStorage.getItem(FOOD_STORAGE_KEY)) || {}; }
   catch(e){ return {}; }
 }
-function saveFoodState(state){
+function saveFoodStateLocal(state){
   localStorage.setItem(FOOD_STORAGE_KEY, JSON.stringify(state));
+}
+function saveFoodState(state){
+  saveFoodStateLocal(state);
+  pushToCloud({ foods: state });
 }
 function removeFoodState(id){
   const st = loadFoodState();
@@ -190,16 +194,24 @@ function loadCustomFoods(){
   try{ return JSON.parse(localStorage.getItem(CUSTOM_STORAGE_KEY)) || []; }
   catch(e){ return []; }
 }
-function saveCustomFoods(list){
+function saveCustomFoodsLocal(list){
   localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(list));
+}
+function saveCustomFoods(list){
+  saveCustomFoodsLocal(list);
+  pushToCloud({ customFoods: list });
 }
 
 function loadComboFoods(){
   try{ return JSON.parse(localStorage.getItem(COMBO_STORAGE_KEY)) || []; }
   catch(e){ return []; }
 }
-function saveComboFoods(list){
+function saveComboFoodsLocal(list){
   localStorage.setItem(COMBO_STORAGE_KEY, JSON.stringify(list));
+}
+function saveComboFoods(list){
+  saveComboFoodsLocal(list);
+  pushToCloud({ comboFoods: list });
 }
 
 function loadGrowthLog(){
@@ -211,11 +223,76 @@ function loadGrowthLog(){
     { id: uid(), date: '2026-02-23', weightLb: 6, weightOz: 11, lengthIn: 19.5, headIn: '' },
     { id: uid(), date: '2026-08-30', weightLb: 13, weightOz: 14, lengthIn: 25, headIn: '' }
   ];
-  saveGrowthLog(seed);
+  saveGrowthLogLocal(seed);
   return seed;
 }
-function saveGrowthLog(entries){
+function saveGrowthLogLocal(entries){
   localStorage.setItem(GROWTH_STORAGE_KEY, JSON.stringify(entries));
+}
+function saveGrowthLog(entries){
+  saveGrowthLogLocal(entries);
+  pushToCloud({ growth: entries });
+}
+
+/* ---------------- Cloud sync (Firebase) ---------------- */
+let applyingRemoteUpdate = false;
+let syncDocRef = null;
+
+function pushToCloud(partial){
+  if (applyingRemoteUpdate) return;
+  if (typeof db === 'undefined' || !db) return;
+  if (!syncDocRef) syncDocRef = db.collection('jaxon-tracker').doc('shared-data');
+  syncDocRef.set(partial, { merge: true }).catch(err => {
+    console.warn('Cloud sync failed:', err.message);
+    setSyncStatus('error', "Couldn't reach the cloud \u2014 check your connection.");
+  });
+}
+
+function setSyncStatus(state, text){
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  el.classList.remove('connected', 'error');
+  if (state) el.classList.add(state);
+  el.textContent = text;
+}
+
+function startSync(){
+  if (typeof db === 'undefined' || !db){
+    setSyncStatus(null, 'Not connected yet \u2014 add your Firebase project keys to firebase-config.js to enable live sync.');
+    return;
+  }
+
+  syncDocRef = db.collection('jaxon-tracker').doc('shared-data');
+  syncDocRef.onSnapshot((snap) => {
+    if (!snap.exists){
+      // first run ever: seed the cloud with whatever's on this device
+      pushToCloud({
+        foods: loadFoodState(),
+        growth: loadGrowthLog(),
+        customFoods: loadCustomFoods(),
+        comboFoods: loadComboFoods()
+      });
+      setSyncStatus('connected', 'Synced live \u2014 changes sync automatically between devices.');
+      return;
+    }
+
+    const data = snap.data();
+    applyingRemoteUpdate = true;
+    if (data.foods) saveFoodStateLocal(data.foods);
+    if (data.growth) saveGrowthLogLocal(data.growth);
+    if (data.customFoods) saveCustomFoodsLocal(data.customFoods);
+    if (data.comboFoods) saveComboFoodsLocal(data.comboFoods);
+    applyingRemoteUpdate = false;
+
+    setSyncStatus('connected', 'Synced live \u2014 changes sync automatically between devices.');
+    renderCategories();
+    renderAllergies();
+    if (document.getElementById('panel-growth').classList.contains('active')) renderGrowth();
+    if (document.getElementById('panel-calendar').classList.contains('active')) renderCalendar();
+  }, (err) => {
+    console.warn('Sync unavailable:', err.message);
+    setSyncStatus('error', "Couldn't connect \u2014 check your Firebase config and Firestore rules.");
+  });
 }
 
 /* ---------------- Tabs ---------------- */
@@ -566,7 +643,7 @@ function refreshCounts(){
 
 document.getElementById('reset-btn').addEventListener('click', () => {
   if (confirm("Clear every checkmark, reaction, and note? This can't be undone.")){
-    localStorage.removeItem(FOOD_STORAGE_KEY);
+    saveFoodState({});
     expandedId = null;
     renderCategories();
     renderAllergies();
@@ -841,7 +918,79 @@ document.getElementById('add-entry-btn').addEventListener('click', () => {
   renderGrowth();
 });
 
+/* ---------------- Backup / restore ---------------- */
+const syncToggle = document.getElementById('sync-toggle');
+const syncPanel = document.getElementById('sync-panel');
+syncToggle.addEventListener('click', () => {
+  syncPanel.hidden = !syncPanel.hidden;
+});
+
+document.getElementById('export-btn').addEventListener('click', () => {
+  const backup = {
+    exportedAt: todayISO(),
+    foods: loadFoodState(),
+    growth: loadGrowthLog(),
+    customFoods: loadCustomFoods(),
+    comboFoods: loadComboFoods()
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'jaxon-first-foods-backup-' + todayISO() + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('import-file').addEventListener('change', (evt) => {
+  const file = evt.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    let data;
+    try{
+      data = JSON.parse(reader.result);
+    }catch(e){
+      alert("That file doesn't look like a valid backup.");
+      evt.target.value = '';
+      return;
+    }
+
+    const looksValid = data && typeof data === 'object' &&
+      (data.foods || data.growth || data.customFoods || data.comboFoods);
+    if (!looksValid){
+      alert("That file doesn't look like a Jaxon's First Foods backup.");
+      evt.target.value = '';
+      return;
+    }
+
+    if (!confirm('This replaces everything currently saved on this device with the backup file. Continue?')){
+      evt.target.value = '';
+      return;
+    }
+
+    saveFoodState(data.foods || {});
+    saveGrowthLog(Array.isArray(data.growth) ? data.growth : loadGrowthLog());
+    saveCustomFoods(Array.isArray(data.customFoods) ? data.customFoods : []);
+    saveComboFoods(Array.isArray(data.comboFoods) ? data.comboFoods : []);
+
+    expandedId = null;
+    renderCategories();
+    renderAllergies();
+    renderGrowth();
+    renderCalendar();
+    evt.target.value = '';
+    syncPanel.hidden = true;
+    alert('Backup restored on this device.');
+  };
+  reader.readAsText(file);
+});
+
 /* ---------------- Init ---------------- */
 renderAge();
 renderCategories();
 renderAllergies();
+startSync();
