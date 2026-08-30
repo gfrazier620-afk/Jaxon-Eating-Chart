@@ -224,6 +224,10 @@ function todayISO(){
   return new Date().toISOString().slice(0,10);
 }
 
+function isReadOnly(){
+  return new URLSearchParams(window.location.search).get('view') === '1';
+}
+
 function compressImage(file, maxDim, quality){
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -301,6 +305,7 @@ function saveFoodStateLocal(state){
   localStorage.setItem(FOOD_STORAGE_KEY, JSON.stringify(state));
 }
 function saveFoodState(state){
+  if (isReadOnly()) return;
   saveFoodStateLocal(state);
   pushToCloud({ foods: state });
 }
@@ -318,6 +323,7 @@ function saveCustomFoodsLocal(list){
   localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(list));
 }
 function saveCustomFoods(list){
+  if (isReadOnly()) return;
   saveCustomFoodsLocal(list);
   pushToCloud({ customFoods: list });
 }
@@ -330,6 +336,7 @@ function saveComboFoodsLocal(list){
   localStorage.setItem(COMBO_STORAGE_KEY, JSON.stringify(list));
 }
 function saveComboFoods(list){
+  if (isReadOnly()) return;
   saveComboFoodsLocal(list);
   pushToCloud({ comboFoods: list });
 }
@@ -342,6 +349,7 @@ function saveMilestoneStateLocal(state){
   localStorage.setItem(MILESTONE_STORAGE_KEY, JSON.stringify(state));
 }
 function saveMilestoneState(state){
+  if (isReadOnly()) return;
   saveMilestoneStateLocal(state);
   pushToCloud({ milestones: state });
 }
@@ -354,6 +362,7 @@ function saveCustomMilestonesLocal(list){
   localStorage.setItem(CUSTOM_MILESTONE_STORAGE_KEY, JSON.stringify(list));
 }
 function saveCustomMilestones(list){
+  if (isReadOnly()) return;
   saveCustomMilestonesLocal(list);
   pushToCloud({ customMilestones: list });
 }
@@ -374,6 +383,7 @@ function saveGrowthLogLocal(entries){
   localStorage.setItem(GROWTH_STORAGE_KEY, JSON.stringify(entries));
 }
 function saveGrowthLog(entries){
+  if (isReadOnly()) return;
   saveGrowthLogLocal(entries);
   pushToCloud({ growth: entries });
 }
@@ -447,7 +457,7 @@ function startSync(){
 }
 
 /* ---------------- Tabs ---------------- */
-const TAB_LABELS = { foods: 'Foods', milestones: 'Milestones', timeline: 'Timeline', calendar: 'Calendar', growth: 'Growth', stats: 'Stats', allergies: 'Allergies' };
+const TAB_LABELS = { foods: 'Foods', milestones: 'Milestones', timeline: 'Timeline', calendar: 'Calendar', growth: 'Growth', stats: 'Stats', guide: 'Guide', allergies: 'Allergies' };
 const menuToggle = document.getElementById('menu-toggle');
 const tabsEl = document.getElementById('tabs');
 const currentTabLabel = document.getElementById('current-tab-label');
@@ -1316,6 +1326,11 @@ function reactionLabel(key){
   return r ? (r.emoji + ' ' + r.label) : '';
 }
 
+function reactionLabelText(key){
+  const r = REACTIONS.find(x => x.key === key);
+  return r ? r.label : '';
+}
+
 function renderTimeline(){
   const state = loadFoodState();
   const foodInfo = buildFoodInfo();
@@ -1831,7 +1846,84 @@ document.getElementById('print-btn').addEventListener('click', () => {
   window.print();
 });
 
+/* ---------------- Weekly recap ---------------- */
+function buildWeeklyRecapText(){
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - 7);
+  const cutoff = cutoffDate.toISOString().slice(0, 10);
+
+  const state = loadFoodState();
+  const foodInfo = buildFoodInfo();
+  const milestoneState = loadMilestoneState();
+  const milestoneInfo = buildMilestoneInfo();
+  const growth = loadGrowthLog();
+  const fmtDate = (d) => new Date(d + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+  const foodsThisWeek = [];
+  Object.keys(state).forEach(id => {
+    const e = state[id];
+    const info = foodInfo[id];
+    if (e && e.checked && e.date && e.date >= cutoff && info){
+      foodsThisWeek.push({ name: info.name, date: e.date, reaction: e.reaction });
+    }
+  });
+  foodsThisWeek.sort((a, b) => a.date.localeCompare(b.date));
+
+  const milestonesThisWeek = [];
+  Object.keys(milestoneState).forEach(id => {
+    const e = milestoneState[id];
+    const info = milestoneInfo[id];
+    if (e && e.achieved && e.date && e.date >= cutoff && info){
+      milestonesThisWeek.push({ name: info.name, date: e.date });
+    }
+  });
+  milestonesThisWeek.sort((a, b) => a.date.localeCompare(b.date));
+
+  const growthThisWeek = growth.filter(g => g.date >= cutoff).sort((a, b) => a.date.localeCompare(b.date));
+
+  let text = "Jaxon's week in review\n\n";
+
+  if (foodsThisWeek.length){
+    text += 'New foods tried:\n';
+    foodsThisWeek.forEach(f => {
+      text += '- ' + f.name + ' (' + fmtDate(f.date) + ')' + (f.reaction ? ' \u2014 ' + reactionLabelText(f.reaction) : '') + '\n';
+    });
+    text += '\n';
+  } else {
+    text += 'No new foods logged this week.\n\n';
+  }
+
+  if (milestonesThisWeek.length){
+    text += 'Milestones:\n';
+    milestonesThisWeek.forEach(m => { text += '- ' + m.name + ' (' + fmtDate(m.date) + ')\n'; });
+    text += '\n';
+  }
+
+  if (growthThisWeek.length){
+    const g = growthThisWeek[growthThisWeek.length - 1];
+    text += 'Latest measurements (' + fmtDate(g.date) + '): ' + g.weightLb + ' lb ' + g.weightOz + ' oz, ' +
+      g.lengthIn + ' in' + (g.headIn ? ', head ' + g.headIn + ' in' : '') + '\n\n';
+  }
+
+  text += 'Sent from Jaxon\u2019s First Foods tracker.';
+  return text;
+}
+
+document.getElementById('recap-btn').addEventListener('click', () => {
+  const text = buildWeeklyRecapText();
+  const title = "Jaxon's week in review";
+  if (navigator.share){
+    navigator.share({ title, text }).catch(() => {});
+  } else {
+    window.location.href = 'mailto:?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(text);
+  }
+});
+
 /* ---------------- Init ---------------- */
+if (isReadOnly()){
+  document.body.classList.add('read-only');
+  document.getElementById('readonly-banner').style.display = '';
+}
 applyTheme(loadTheme());
 renderAge();
 renderBirthdayBanner();
@@ -1839,3 +1931,9 @@ renderCategories();
 renderAllergies();
 renderUserBadge();
 startSync();
+
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((err) => console.warn('Service worker registration failed:', err));
+  });
+}

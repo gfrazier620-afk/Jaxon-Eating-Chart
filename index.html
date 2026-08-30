@@ -8,6 +8,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Domine:wght@500;600;700&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4F7942">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Jaxon Foods">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
@@ -25,6 +31,7 @@
   </header>
 
   <div class="birthday-banner" id="birthday-banner"></div>
+  <div class="readonly-banner" id="readonly-banner">👀 Viewing only — changes here won't be saved</div>
 
   <div class="sync-bar">
     <div class="user-select" id="user-select">
@@ -35,6 +42,7 @@
     </div>
     <div class="sync-bar-actions">
       <button class="sync-toggle-btn" id="theme-toggle" type="button">🌙 Dark mode</button>
+      <button class="sync-toggle-btn" id="recap-btn" type="button">Weekly recap</button>
       <button class="sync-toggle-btn" id="print-btn" type="button">Print keepsake</button>
       <button class="sync-toggle-btn" id="sync-toggle" type="button">Backup / restore data</button>
     </div>
@@ -71,6 +79,7 @@
     <button class="tab-btn" data-tab="calendar" type="button">Calendar</button>
     <button class="tab-btn" data-tab="growth" type="button">Growth</button>
     <button class="tab-btn" data-tab="stats" type="button">Stats</button>
+    <button class="tab-btn" data-tab="guide" type="button">Guide</button>
     <button class="tab-btn" data-tab="allergies" type="button">Allergies <span class="badge" id="allergy-badge" style="display:none;"></span></button>
   </div>
 
@@ -202,6 +211,28 @@
         <ul class="stats-list" id="stats-disliked"></ul>
       </div>
     </div>
+  </div>
+
+  <!-- GUIDE PANEL -->
+  <div class="panel" id="panel-guide">
+    <p class="guide-intro">General starting points for introducing solids \u2014 every baby moves through these at their own pace, so treat this as a rough map, not a schedule.</p>
+
+    <h2>Around 6 months</h2>
+    <p>Start with thin purees or very soft mashes, offered once or twice a day, after milk (breast or formula) rather than instead of it. Don't expect much to actually get eaten at first &mdash; this stage is mostly about exploring taste and texture. Iron-rich foods matter here: a baby's iron stores from birth start dropping around this age, so fortified cereal, pureed meat, lentils, and beans are worth prioritizing early on.</p>
+
+    <h2>7&ndash;9 months</h2>
+    <p>Move toward thicker mashed or minced textures with some lumps, and start offering soft finger foods for self-feeding &mdash; steamed vegetable sticks, ripe soft fruit, strips of toast. This is also a good window to introduce an open or straw cup with water at meals. Most babies are up to 2&ndash;3 solid meals a day by the end of this stretch, alongside milk feeds.</p>
+
+    <h2>9&ndash;12 months</h2>
+    <p>Textures can move toward chopped, bite-sized table food, with more finger foods and some early practice with a spoon. Three meals plus a snack or two is common. Milk is often still the bulk of nutrition, but solids are playing a bigger role by now.</p>
+
+    <h2>Good habits at every stage</h2>
+    <ul>
+      <li>Introduce one new food at a time, and give it a couple of days before the next new one, so a reaction is easy to trace back.</li>
+      <li>Skip honey and unpasteurized foods before 12 months.</li>
+      <li>Watch for choking hazards &mdash; whole nuts, whole grapes, popcorn, and hard raw chunks are easier to manage cut small, sliced thin, or cooked soft.</li>
+      <li>None of this is a strict rulebook. If something here doesn't match what Jaxon's pediatrician has recommended for him specifically, follow their guidance instead.</li>
+    </ul>
   </div>
 
   <!-- ALLERGIES PANEL -->

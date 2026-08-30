@@ -1044,6 +1044,62 @@
     margin-bottom: 16px;
   }
 
+  .readonly-banner{
+    display:none;
+    text-align:center;
+    font-family: 'Karla', sans-serif;
+    font-size: 13px;
+    color: var(--ink-soft);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 8px 16px;
+    margin-bottom: 16px;
+  }
+
+  /* ---------- Read-only (family share view) ---------- */
+  body.read-only .reset-btn,
+  body.read-only #sync-toggle,
+  body.read-only .user-select,
+  body.read-only .add-food-row,
+  body.read-only .food-delete,
+  body.read-only .row-del,
+  body.read-only #add-entry-btn,
+  body.read-only .photo-add-label,
+  body.read-only .photo-remove-btn,
+  body.read-only .try-next-section{
+    display:none !important;
+  }
+
+  body.read-only input,
+  body.read-only .reaction-btn,
+  body.read-only .log-table input{
+    pointer-events:none;
+  }
+
+  /* ---------- Guide tab ---------- */
+  .guide-intro{
+    color: var(--ink-soft);
+    font-size: 14.5px;
+    margin-bottom: 20px;
+  }
+
+  #panel-guide h2{
+    font-size: 17px;
+    margin-top: 26px;
+    margin-bottom: 8px;
+  }
+  #panel-guide h2:first-of-type{ margin-top: 0; }
+
+  #panel-guide p, #panel-guide ul{
+    font-size: 14.5px;
+    line-height: 1.6;
+    margin: 0 0 6px;
+  }
+
+  #panel-guide ul{ padding-left: 20px; }
+  #panel-guide li{ margin-bottom: 8px; }
+
   /* ---------- Search bar ---------- */
   .search-bar{
     margin-bottom: 18px;
