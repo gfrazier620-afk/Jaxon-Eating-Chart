@@ -23,6 +23,7 @@
 
   <div class="tabs">
     <button class="tab-btn active" data-tab="foods" type="button">Foods</button>
+    <button class="tab-btn" data-tab="calendar" type="button">Calendar</button>
     <button class="tab-btn" data-tab="growth" type="button">Growth</button>
     <button class="tab-btn" data-tab="allergies" type="button">Allergies <span class="badge" id="allergy-badge" style="display:none;"></span></button>
   </div>
@@ -43,6 +44,20 @@
     <div class="actions">
       <button class="reset-btn" id="reset-btn" type="button">Reset all checkmarks</button>
     </div>
+  </div>
+
+  <!-- CALENDAR PANEL -->
+  <div class="panel" id="panel-calendar">
+    <div class="cal-nav">
+      <button class="cal-nav-btn" id="cal-prev" type="button" aria-label="Previous month">&larr;</button>
+      <h3 id="cal-label"></h3>
+      <button class="cal-nav-btn" id="cal-next" type="button" aria-label="Next month">&rarr;</button>
+    </div>
+    <div class="cal-weekdays">
+      <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <p class="cal-hint">Tap a food's checkmark on the Foods tab to log the date it was tried &mdash; it'll show up here.</p>
   </div>
 
   <!-- GROWTH PANEL -->
@@ -69,6 +84,11 @@
         <h3>Length over time</h3>
         <canvas id="length-chart"></canvas>
       </div>
+      <div class="chart-card">
+        <h3>Head circumference over time</h3>
+        <canvas id="head-chart"></canvas>
+        <p class="chart-empty" id="head-chart-empty" style="display:none;">No head measurements logged yet.</p>
+      </div>
     </div>
 
     <div class="chart-card">
@@ -80,6 +100,7 @@
             <th class="num-col">lb</th>
             <th class="num-col">oz</th>
             <th class="num-col">Length (in)</th>
+            <th class="num-col">Head (in)</th>
             <th></th>
           </tr>
         </thead>
