@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Domine:wght@500;600;700&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
   :root{
     --bg: #F1F4EC;
@@ -18,6 +19,8 @@
     --fern-dim: #E4ECDD;
     --carrot: #D9643A;
     --carrot-dim: #FBE6DB;
+    --alert: #B23A48;
+    --alert-dim: #F6E1E4;
   }
 
   *{ box-sizing: border-box; }
@@ -38,7 +41,7 @@
   }
 
   .wrap{
-    max-width: 920px;
+    max-width: 960px;
     margin: 0 auto;
     padding: 40px 24px 80px;
   }
@@ -49,7 +52,7 @@
     align-items: baseline;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
     flex-wrap: wrap;
   }
 
@@ -73,6 +76,46 @@
     white-space: nowrap;
     font-weight: 600;
   }
+
+  /* ---------- Tabs ---------- */
+  .tabs{
+    display:flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 28px;
+  }
+
+  .tab-btn{
+    font-family: 'Domine', serif;
+    font-size: 15px;
+    background: none;
+    border: none;
+    padding: 10px 4px;
+    margin-right: 22px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    position: relative;
+    top: 1px;
+  }
+
+  .tab-btn.active{
+    color: var(--ink);
+    border-bottom: 2px solid var(--fern);
+  }
+
+  .tab-btn .badge{
+    font-family: 'Karla', sans-serif;
+    font-size: 11px;
+    background: var(--alert-dim);
+    color: var(--alert);
+    border-radius: 999px;
+    padding: 1px 7px;
+    margin-left: 6px;
+    font-weight: 700;
+  }
+
+  .panel{ display:none; }
+  .panel.active{ display:block; }
 
   /* ---------- Growth ticket ---------- */
   .ticket{
@@ -120,12 +163,104 @@
     color: var(--ink-soft);
   }
 
+  /* ---------- Growth chart + log ---------- */
+  .chart-row{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 28px;
+  }
+
+  @media (max-width: 640px){
+    .chart-row{ grid-template-columns: 1fr; }
+  }
+
+  .chart-card{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+
+  .chart-card h3{
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+
+  .chart-card canvas{ max-height: 220px; }
+
+  .log-table{
+    width:100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  .log-table th{
+    text-align:left;
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-weight: 600;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .log-table td{
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .log-table input[type="date"],
+  .log-table input[type="number"]{
+    border: 1px solid transparent;
+    background: transparent;
+    font-family: 'Karla', sans-serif;
+    font-size: 13.5px;
+    color: var(--ink);
+    width: 100%;
+    padding: 3px 4px;
+    border-radius: 4px;
+  }
+
+  .log-table input:hover, .log-table input:focus{
+    border-color: var(--line);
+    background: var(--bg);
+  }
+
+  .log-table .num-col{ width: 64px; }
+  .log-table .date-col{ width: 130px; }
+
+  .row-del{
+    background:none;
+    border:none;
+    color: var(--ink-soft);
+    cursor:pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 2px 6px;
+  }
+  .row-del:hover{ color: var(--alert); }
+
+  .add-entry-btn{
+    margin-top: 12px;
+    font-family:'Karla', sans-serif;
+    font-size: 13px;
+    color: var(--fern);
+    background: var(--fern-dim);
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor:pointer;
+  }
+  .add-entry-btn:hover{ filter: brightness(0.95); }
+
   /* ---------- Progress ---------- */
   .progress-row{
     display:flex;
     align-items:center;
     gap: 16px;
-    margin-bottom: 36px;
+    margin-bottom: 32px;
   }
 
   .progress-track{
@@ -186,6 +321,7 @@
     grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     gap: 8px;
     margin-top: 12px;
+    align-items: start;
   }
 
   .food-row{
@@ -193,15 +329,26 @@
     border: 1px solid var(--line);
     border-radius: 8px;
     padding: 10px 12px;
-    display:flex;
-    align-items:center;
-    gap: 10px;
     transition: border-color 0.15s ease, background 0.15s ease;
   }
 
   .food-row.checked{
     background: var(--fern-dim);
     border-color: var(--fern);
+  }
+
+  .food-row.expanded{
+    grid-column: 1 / -1;
+  }
+
+  .food-row.has-allergy{
+    border-color: var(--alert);
+  }
+
+  .food-main{
+    display:flex;
+    align-items:center;
+    gap: 10px;
   }
 
   .food-row input[type="checkbox"]{
@@ -211,28 +358,126 @@
     cursor:pointer;
   }
 
-  .food-row label{
+  .food-row label.food-label{
     flex:1;
     font-size: 14.5px;
     cursor:pointer;
     user-select:none;
   }
 
-  .food-row.checked label{
+  .allergy-flag{
+    font-size: 11px;
+    color: var(--alert);
+    background: var(--alert-dim);
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .food-detail{
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--line);
+    display:flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .detail-row{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .detail-row .field-label{
+    font-size: 12px;
+    color: var(--ink-soft);
+    width: 90px;
+    flex-shrink:0;
+  }
+
+  .detail-row input[type="date"]{
+    font-size: 13px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 4px 6px;
+    font-family: 'Karla', sans-serif;
     color: var(--ink);
   }
 
-  .food-row .tried-date{
-    font-size: 12px;
-    border: none;
-    background: transparent;
-    color: var(--ink-soft);
-    width: 108px;
-    text-align:right;
+  .reaction-btns{ display:flex; gap: 6px; }
+
+  .reaction-btn{
+    font-size: 18px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 3px 8px;
     cursor:pointer;
+    line-height: 1.4;
   }
 
-  .food-row.checked .tried-date{ color: var(--fern); font-weight: 600; }
+  .reaction-btn.active{
+    border-color: var(--fern);
+    background: var(--fern-dim);
+  }
+
+  .check-label{
+    font-size: 13px;
+    display:flex;
+    align-items:center;
+    gap: 6px;
+    cursor:pointer;
+    color: var(--ink);
+  }
+
+  .check-label input{ accent-color: var(--alert); cursor:pointer; }
+
+  .allergy-note{
+    font-size: 13px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 5px 8px;
+    font-family: 'Karla', sans-serif;
+    flex: 1;
+    min-width: 160px;
+  }
+
+  /* ---------- Allergies tab ---------- */
+  .allergy-item{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--alert);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+  }
+
+  .allergy-item .a-name{
+    font-family: 'Domine', serif;
+    font-size: 15.5px;
+  }
+
+  .allergy-item .a-meta{
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  .allergy-item .a-note{
+    font-size: 13.5px;
+    margin-top: 6px;
+    color: var(--ink);
+  }
+
+  .empty-state{
+    text-align:center;
+    padding: 40px 20px;
+    color: var(--ink-soft);
+    font-size: 14.5px;
+  }
 
   /* ---------- Footer note ---------- */
   .note{
@@ -282,44 +527,90 @@
   <header class="top">
     <div>
       <h1>Jaxon's First Foods</h1>
-      <p>Tracking every taste from six months on.</p>
+      <p>Tracking every taste, and how it landed, from six months on.</p>
     </div>
     <span id="age-badge"></span>
   </header>
 
-  <div class="ticket">
-    <div class="col">
-      <span class="col-label">At birth · Feb 23, 2026</span>
-      <span class="stat-line">6 lb 11 oz</span>
-      <span class="stat-sub">19.5 in long</span>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="foods" type="button">Foods</button>
+    <button class="tab-btn" data-tab="growth" type="button">Growth</button>
+    <button class="tab-btn" data-tab="allergies" type="button">Allergies <span class="badge" id="allergy-badge" style="display:none;"></span></button>
+  </div>
+
+  <!-- FOODS PANEL -->
+  <div class="panel active" id="panel-foods">
+    <div class="progress-row">
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      <span class="progress-count" id="progress-count">0 of 100 tried</span>
     </div>
-    <div class="col">
-      <span class="col-label">Latest check-in</span>
-      <span class="stat-line">13 lb 14 oz</span>
-      <span class="stat-sub">25 in long</span>
+
+    <div id="categories"></div>
+
+    <div class="note">
+      <strong>Before you start:</strong> introduce one new food at a time (waiting a couple of days between new allergens like egg, dairy, peanut, tree nuts, soy, wheat, fish, and shellfish) and watch for any reaction. Skip honey and unpasteurized foods before age one, and avoid choking hazards like whole nuts, whole grapes, or hard raw pieces &mdash; serve mashed, thinly sliced, or ground instead. When in doubt, check with Jaxon's pediatrician.
+    </div>
+
+    <div class="actions">
+      <button class="reset-btn" id="reset-btn" type="button">Reset all checkmarks</button>
     </div>
   </div>
 
-  <div class="progress-row">
-    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
-    <span class="progress-count" id="progress-count">0 of 100 tried</span>
+  <!-- GROWTH PANEL -->
+  <div class="panel" id="panel-growth">
+    <div class="ticket">
+      <div class="col">
+        <span class="col-label">At birth &middot; Feb 23, 2026</span>
+        <span class="stat-line">6 lb 11 oz</span>
+        <span class="stat-sub">19.5 in long</span>
+      </div>
+      <div class="col">
+        <span class="col-label" id="latest-label">Latest check-in</span>
+        <span class="stat-line" id="latest-weight">&mdash;</span>
+        <span class="stat-sub" id="latest-length">&mdash;</span>
+      </div>
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-card">
+        <h3>Weight over time</h3>
+        <canvas id="weight-chart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Length over time</h3>
+        <canvas id="length-chart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h3>Growth log</h3>
+      <table class="log-table">
+        <thead>
+          <tr>
+            <th class="date-col">Date</th>
+            <th class="num-col">lb</th>
+            <th class="num-col">oz</th>
+            <th class="num-col">Length (in)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="growth-tbody"></tbody>
+      </table>
+      <button class="add-entry-btn" id="add-entry-btn" type="button">+ Add growth entry</button>
+    </div>
   </div>
 
-  <div id="categories"></div>
-
-  <div class="note">
-    <strong>Before you start:</strong> introduce one new food at a time (waiting a couple of days between new allergens like egg, dairy, peanut, tree nuts, soy, wheat, fish, and shellfish) and watch for any reaction. Skip honey and unpasteurized foods before age one, and avoid choking hazards like whole nuts, whole grapes, or hard raw pieces &mdash; serve mashed, thinly sliced, or ground instead. When in doubt, check with Jaxon's pediatrician.
-  </div>
-
-  <div class="actions">
-    <button class="reset-btn" id="reset-btn" type="button">Reset all checkmarks</button>
+  <!-- ALLERGIES PANEL -->
+  <div class="panel" id="panel-allergies">
+    <div id="allergy-list"></div>
   </div>
 
 </div>
 
 <script>
   const BIRTH_DATE = new Date(2026, 1, 23); // Feb 23, 2026
-  const STORAGE_KEY = 'jaxon-first-foods-v1';
+  const FOOD_STORAGE_KEY = 'jaxon-first-foods-v1';
+  const GROWTH_STORAGE_KEY = 'jaxon-growth-log-v1';
 
   const FOOD_DATA = [
     { name: 'Fruits', color: '#D9643A', items: [
@@ -359,48 +650,84 @@
     ]}
   ];
 
+  const REACTIONS = [
+    { key: 'liked', emoji: '\u{1F60B}', label: 'Liked it' },
+    { key: 'neutral', emoji: '\u{1F610}', label: 'Neutral' },
+    { key: 'disliked', emoji: '\u{1F616}', label: "Didn't like it" }
+  ];
+
+  let expandedId = null;
+  let weightChart = null;
+  let lengthChart = null;
+
   function slug(s){
     return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   }
 
-  function loadState(){
-    try{
-      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-    }catch(e){ return {}; }
-  }
-
-  function saveState(state){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  function uid(){
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   }
 
   function todayISO(){
-    const d = new Date();
-    return d.toISOString().slice(0,10);
+    return new Date().toISOString().slice(0,10);
   }
 
+  function loadFoodState(){
+    try{ return JSON.parse(localStorage.getItem(FOOD_STORAGE_KEY)) || {}; }
+    catch(e){ return {}; }
+  }
+  function saveFoodState(state){
+    localStorage.setItem(FOOD_STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function loadGrowthLog(){
+    try{
+      const raw = localStorage.getItem(GROWTH_STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    }catch(e){ /* fall through to seed */ }
+    const seed = [
+      { id: uid(), date: '2026-02-23', weightLb: 6, weightOz: 11, lengthIn: 19.5 },
+      { id: uid(), date: '2026-08-30', weightLb: 13, weightOz: 14, lengthIn: 25 }
+    ];
+    saveGrowthLog(seed);
+    return seed;
+  }
+  function saveGrowthLog(entries){
+    localStorage.setItem(GROWTH_STORAGE_KEY, JSON.stringify(entries));
+  }
+
+  /* ---------------- Tabs ---------------- */
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+      if (btn.dataset.tab === 'growth') renderGrowth();
+    });
+  });
+
+  /* ---------------- Age badge ---------------- */
   function renderAge(){
     const now = new Date();
     let months = (now.getFullYear() - BIRTH_DATE.getFullYear()) * 12 + (now.getMonth() - BIRTH_DATE.getMonth());
     const refDate = new Date(BIRTH_DATE);
     refDate.setMonth(refDate.getMonth() + months);
     if (refDate > now){ months -= 1; refDate.setMonth(refDate.getMonth() - 1); }
-    const dayDiffMs = now - refDate;
-    const days = Math.floor(dayDiffMs / 86400000);
+    const days = Math.floor((now - refDate) / 86400000);
     const weeks = Math.floor(days / 7);
     let text = months + (months === 1 ? ' month' : ' months');
     if (weeks > 0) text += ', ' + weeks + (weeks === 1 ? ' week' : ' weeks');
     document.getElementById('age-badge').textContent = text + ' old';
   }
 
+  /* ---------------- Foods tab ---------------- */
   function renderCategories(){
-    const state = loadState();
+    const state = loadFoodState();
     const container = document.getElementById('categories');
     container.innerHTML = '';
-    let totalChecked = 0;
-    let totalFoods = 0;
 
     FOOD_DATA.forEach(cat => {
-      totalFoods += cat.items.length;
       const section = document.createElement('div');
       section.className = 'category';
       section.style.setProperty('--cat-color', cat.color);
@@ -415,104 +742,357 @@
 
       cat.items.forEach(food => {
         const id = slug(cat.name + '-' + food);
-        const entry = state[id];
-        const isChecked = !!(entry && entry.checked);
-        if (isChecked) totalChecked++;
-
-        const row = document.createElement('div');
-        row.className = 'food-row' + (isChecked ? ' checked' : '');
-
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.id = id;
-        checkbox.checked = isChecked;
-
-        const label = document.createElement('label');
-        label.htmlFor = id;
-        label.textContent = food;
-
-        const dateInput = document.createElement('input');
-        dateInput.type = 'date';
-        dateInput.className = 'tried-date';
-        dateInput.value = (entry && entry.date) ? entry.date : '';
-        dateInput.style.visibility = isChecked ? 'visible' : 'hidden';
-
-        checkbox.addEventListener('change', () => {
-          const st = loadState();
-          if (checkbox.checked){
-            const d = dateInput.value || todayISO();
-            dateInput.value = d;
-            dateInput.style.visibility = 'visible';
-            st[id] = { checked: true, date: d };
-            row.classList.add('checked');
-          } else {
-            dateInput.style.visibility = 'hidden';
-            st[id] = { checked: false, date: dateInput.value };
-            row.classList.remove('checked');
-          }
-          saveState(st);
-          updateProgress();
-        });
-
-        dateInput.addEventListener('change', () => {
-          const st = loadState();
-          st[id] = { checked: checkbox.checked, date: dateInput.value };
-          saveState(st);
-        });
-
-        row.appendChild(checkbox);
-        row.appendChild(label);
-        row.appendChild(dateInput);
-        grid.appendChild(row);
+        grid.appendChild(buildFoodRow(id, food, state[id] || {}));
       });
 
       section.appendChild(grid);
       container.appendChild(section);
     });
 
-    // fill in per-category counts
-    document.querySelectorAll('[data-count]').forEach(span => {
-      const catName = span.getAttribute('data-count');
-      const cat = FOOD_DATA.find(c => c.name === catName);
-      const state2 = loadState();
-      const checkedInCat = cat.items.filter(food =>
-        state2[slug(cat.name + '-' + food)] && state2[slug(cat.name + '-' + food)].checked
-      ).length;
-      span.textContent = checkedInCat + '/' + cat.items.length;
-    });
-
-    updateProgress();
+    refreshCounts();
   }
 
-  function updateProgress(){
-    const state = loadState();
+  function buildFoodRow(id, foodName, entry){
+    const isChecked = !!entry.checked;
+    const row = document.createElement('div');
+    row.className = 'food-row' + (isChecked ? ' checked' : '') + (entry.allergic ? ' has-allergy' : '') + (expandedId === id ? ' expanded' : '');
+    row.dataset.id = id;
+
+    const main = document.createElement('div');
+    main.className = 'food-main';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = id;
+    checkbox.checked = isChecked;
+
+    const label = document.createElement('label');
+    label.className = 'food-label';
+    label.htmlFor = id;
+    label.textContent = foodName;
+
+    main.appendChild(checkbox);
+    main.appendChild(label);
+
+    if (entry.allergic){
+      const flag = document.createElement('span');
+      flag.className = 'allergy-flag';
+      flag.textContent = 'Reaction';
+      main.appendChild(flag);
+    }
+
+    row.appendChild(main);
+
+    checkbox.addEventListener('change', () => {
+      const st = loadFoodState();
+      const e = st[id] || {};
+      e.checked = checkbox.checked;
+      if (checkbox.checked && !e.date) e.date = todayISO();
+      st[id] = e;
+      saveFoodState(st);
+      expandedId = checkbox.checked ? id : (expandedId === id ? null : expandedId);
+      renderCategories();
+      renderAllergies();
+    });
+
+    if (isChecked){
+      label.addEventListener('click', (evt) => {
+        evt.preventDefault();
+        expandedId = (expandedId === id) ? null : id;
+        renderCategories();
+      });
+
+      if (expandedId === id){
+        row.appendChild(buildFoodDetail(id, entry));
+      }
+    }
+
+    return row;
+  }
+
+  function buildFoodDetail(id, entry){
+    const detail = document.createElement('div');
+    detail.className = 'food-detail';
+
+    // date row
+    const dateRow = document.createElement('div');
+    dateRow.className = 'detail-row';
+    const dateLbl = document.createElement('span');
+    dateLbl.className = 'field-label';
+    dateLbl.textContent = 'Date tried';
+    const dateInput = document.createElement('input');
+    dateInput.type = 'date';
+    dateInput.value = entry.date || todayISO();
+    dateInput.addEventListener('change', () => updateFoodEntry(id, { date: dateInput.value }));
+    dateRow.appendChild(dateLbl);
+    dateRow.appendChild(dateInput);
+    detail.appendChild(dateRow);
+
+    // reaction row
+    const reactRow = document.createElement('div');
+    reactRow.className = 'detail-row';
+    const reactLbl = document.createElement('span');
+    reactLbl.className = 'field-label';
+    reactLbl.textContent = 'Reaction';
+    reactRow.appendChild(reactLbl);
+    const btnWrap = document.createElement('div');
+    btnWrap.className = 'reaction-btns';
+    REACTIONS.forEach(r => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'reaction-btn' + (entry.reaction === r.key ? ' active' : '');
+      btn.textContent = r.emoji;
+      btn.title = r.label;
+      btn.addEventListener('click', () => {
+        const newVal = entry.reaction === r.key ? null : r.key;
+        updateFoodEntry(id, { reaction: newVal });
+      });
+      btnWrap.appendChild(btn);
+    });
+    reactRow.appendChild(btnWrap);
+    detail.appendChild(reactRow);
+
+    // made a face + allergic row
+    const flagRow = document.createElement('div');
+    flagRow.className = 'detail-row';
+
+    const faceLabel = document.createElement('label');
+    faceLabel.className = 'check-label';
+    const faceCheck = document.createElement('input');
+    faceCheck.type = 'checkbox';
+    faceCheck.checked = !!entry.face;
+    faceCheck.addEventListener('change', () => updateFoodEntry(id, { face: faceCheck.checked }));
+    faceLabel.appendChild(faceCheck);
+    faceLabel.append('Made a funny face');
+    flagRow.appendChild(faceLabel);
+
+    const allergyLabel = document.createElement('label');
+    allergyLabel.className = 'check-label';
+    const allergyCheck = document.createElement('input');
+    allergyCheck.type = 'checkbox';
+    allergyCheck.checked = !!entry.allergic;
+    allergyCheck.addEventListener('change', () => {
+      updateFoodEntry(id, { allergic: allergyCheck.checked });
+      renderAllergies();
+    });
+    allergyLabel.appendChild(allergyCheck);
+    allergyLabel.append('Allergic reaction');
+    flagRow.appendChild(allergyLabel);
+
+    detail.appendChild(flagRow);
+
+    if (entry.allergic){
+      const noteRow = document.createElement('div');
+      noteRow.className = 'detail-row';
+      const noteInput = document.createElement('input');
+      noteInput.type = 'text';
+      noteInput.className = 'allergy-note';
+      noteInput.placeholder = 'What happened? (e.g. hives, fussy, rash)';
+      noteInput.value = entry.allergyNote || '';
+      noteInput.addEventListener('change', () => {
+        updateFoodEntry(id, { allergyNote: noteInput.value });
+        renderAllergies();
+      });
+      noteRow.appendChild(noteInput);
+      detail.appendChild(noteRow);
+    }
+
+    return detail;
+  }
+
+  function updateFoodEntry(id, patch){
+    const st = loadFoodState();
+    st[id] = Object.assign({}, st[id] || {}, patch);
+    saveFoodState(st);
+    renderCategories();
+  }
+
+  function refreshCounts(){
+    const state = loadFoodState();
     let total = 0, checked = 0;
-    FOOD_DATA.forEach(cat => cat.items.forEach(food => {
-      total++;
-      const id = slug(cat.name + '-' + food);
-      if (state[id] && state[id].checked) checked++;
-    }));
+    FOOD_DATA.forEach(cat => {
+      const checkedInCat = cat.items.filter(food => state[slug(cat.name + '-' + food)] && state[slug(cat.name + '-' + food)].checked).length;
+      total += cat.items.length;
+      checked += checkedInCat;
+      const span = document.querySelector('[data-count="' + CSS.escape(cat.name) + '"]');
+      if (span) span.textContent = checkedInCat + '/' + cat.items.length;
+    });
     document.getElementById('progress-count').textContent = checked + ' of ' + total + ' tried';
     document.getElementById('progress-fill').style.width = (checked / total * 100) + '%';
-    document.querySelectorAll('[data-count]').forEach(span => {
-      const catName = span.getAttribute('data-count');
-      const cat = FOOD_DATA.find(c => c.name === catName);
-      const checkedInCat = cat.items.filter(food =>
-        state[slug(cat.name + '-' + food)] && state[slug(cat.name + '-' + food)].checked
-      ).length;
-      span.textContent = checkedInCat + '/' + cat.items.length;
-    });
   }
 
   document.getElementById('reset-btn').addEventListener('click', () => {
-    if (confirm("Clear every checkmark and date? This can't be undone.")){
-      localStorage.removeItem(STORAGE_KEY);
+    if (confirm("Clear every checkmark, reaction, and note? This can't be undone.")){
+      localStorage.removeItem(FOOD_STORAGE_KEY);
+      expandedId = null;
       renderCategories();
+      renderAllergies();
     }
   });
 
+  /* ---------------- Allergies tab ---------------- */
+  function renderAllergies(){
+    const state = loadFoodState();
+    const flagged = [];
+    FOOD_DATA.forEach(cat => {
+      cat.items.forEach(food => {
+        const id = slug(cat.name + '-' + food);
+        const e = state[id];
+        if (e && e.allergic){
+          flagged.push({ id, food, category: cat.name, color: cat.color, date: e.date, note: e.allergyNote });
+        }
+      });
+    });
+    flagged.sort((a, b) => a.food.localeCompare(b.food));
+
+    const list = document.getElementById('allergy-list');
+    const badge = document.getElementById('allergy-badge');
+
+    if (flagged.length === 0){
+      badge.style.display = 'none';
+      list.innerHTML = '<div class="empty-state">No known reactions logged yet &mdash; nothing to flag here.</div>';
+      return;
+    }
+
+    badge.style.display = 'inline-block';
+    badge.textContent = flagged.length;
+
+    list.innerHTML = '';
+    flagged.forEach(f => {
+      const item = document.createElement('div');
+      item.className = 'allergy-item';
+      const dateStr = f.date ? new Date(f.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'no date logged';
+      item.innerHTML =
+        '<div class="a-name">' + f.food + '</div>' +
+        '<div class="a-meta">' + f.category + ' &middot; first flagged ' + dateStr + '</div>' +
+        (f.note ? '<div class="a-note">' + f.note.replace(/</g,'&lt;') + '</div>' : '');
+      list.appendChild(item);
+    });
+  }
+
+  /* ---------------- Growth tab ---------------- */
+  function lbOzToDecimal(lb, oz){ return (Number(lb)||0) + (Number(oz)||0)/16; }
+
+  function renderGrowth(){
+    const entries = loadGrowthLog().slice().sort((a,b) => a.date.localeCompare(b.date));
+
+    // ticket "latest"
+    if (entries.length){
+      const latest = entries[entries.length - 1];
+      document.getElementById('latest-label').textContent = 'Latest check-in \u00b7 ' +
+        new Date(latest.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      document.getElementById('latest-weight').textContent = latest.weightLb + ' lb ' + latest.weightOz + ' oz';
+      document.getElementById('latest-length').textContent = latest.lengthIn + ' in long';
+    }
+
+    // charts
+    const labels = entries.map(e => new Date(e.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+    const weightDecimals = entries.map(e => lbOzToDecimal(e.weightLb, e.weightOz));
+    const lengthValues = entries.map(e => Number(e.lengthIn) || 0);
+
+    if (weightChart) weightChart.destroy();
+    if (lengthChart) lengthChart.destroy();
+
+    const weightCtx = document.getElementById('weight-chart').getContext('2d');
+    weightChart = new Chart(weightCtx, {
+      type: 'line',
+      data: { labels, datasets: [{
+        data: weightDecimals, borderColor: '#4F7942', backgroundColor: '#4F794222',
+        tension: 0.25, fill: true, pointRadius: 4, pointBackgroundColor: '#4F7942'
+      }]},
+      options: {
+        plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => entries[ctx.dataIndex].weightLb + ' lb ' + entries[ctx.dataIndex].weightOz + ' oz' } } },
+        scales: { y: { title: { display: true, text: 'lb (decimal)' } } }
+      }
+    });
+
+    const lengthCtx = document.getElementById('length-chart').getContext('2d');
+    lengthChart = new Chart(lengthCtx, {
+      type: 'line',
+      data: { labels, datasets: [{
+        data: lengthValues, borderColor: '#D9643A', backgroundColor: '#D9643A22',
+        tension: 0.25, fill: true, pointRadius: 4, pointBackgroundColor: '#D9643A'
+      }]},
+      options: {
+        plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => ctx.parsed.y + ' in' } } },
+        scales: { y: { title: { display: true, text: 'inches' } } }
+      }
+    });
+
+    // table
+    const tbody = document.getElementById('growth-tbody');
+    tbody.innerHTML = '';
+    entries.forEach(e => tbody.appendChild(buildGrowthRow(e)));
+  }
+
+  function buildGrowthRow(entry){
+    const tr = document.createElement('tr');
+
+    const dateTd = document.createElement('td');
+    const dateInput = document.createElement('input');
+    dateInput.type = 'date';
+    dateInput.value = entry.date;
+    dateInput.addEventListener('change', () => updateGrowthEntry(entry.id, { date: dateInput.value }));
+    dateTd.appendChild(dateInput);
+
+    const lbTd = document.createElement('td');
+    const lbInput = document.createElement('input');
+    lbInput.type = 'number'; lbInput.min = 0; lbInput.value = entry.weightLb;
+    lbInput.addEventListener('change', () => updateGrowthEntry(entry.id, { weightLb: Number(lbInput.value) }));
+    lbTd.appendChild(lbInput);
+
+    const ozTd = document.createElement('td');
+    const ozInput = document.createElement('input');
+    ozInput.type = 'number'; ozInput.min = 0; ozInput.max = 15; ozInput.value = entry.weightOz;
+    ozInput.addEventListener('change', () => updateGrowthEntry(entry.id, { weightOz: Number(ozInput.value) }));
+    ozTd.appendChild(ozInput);
+
+    const lenTd = document.createElement('td');
+    const lenInput = document.createElement('input');
+    lenInput.type = 'number'; lenInput.step = '0.1'; lenInput.min = 0; lenInput.value = entry.lengthIn;
+    lenInput.addEventListener('change', () => updateGrowthEntry(entry.id, { lengthIn: Number(lenInput.value) }));
+    lenTd.appendChild(lenInput);
+
+    const delTd = document.createElement('td');
+    const delBtn = document.createElement('button');
+    delBtn.className = 'row-del';
+    delBtn.type = 'button';
+    delBtn.textContent = '\u00d7';
+    delBtn.title = 'Delete entry';
+    delBtn.addEventListener('click', () => {
+      const entries = loadGrowthLog().filter(e => e.id !== entry.id);
+      saveGrowthLog(entries);
+      renderGrowth();
+    });
+    delTd.appendChild(delBtn);
+
+    tr.appendChild(dateTd); tr.appendChild(lbTd); tr.appendChild(ozTd); tr.appendChild(lenTd); tr.appendChild(delTd);
+    return tr;
+  }
+
+  function updateGrowthEntry(id, patch){
+    const entries = loadGrowthLog();
+    const idx = entries.findIndex(e => e.id === id);
+    if (idx > -1){
+      entries[idx] = Object.assign({}, entries[idx], patch);
+      saveGrowthLog(entries);
+      renderGrowth();
+    }
+  }
+
+  document.getElementById('add-entry-btn').addEventListener('click', () => {
+    const entries = loadGrowthLog();
+    entries.push({ id: uid(), date: todayISO(), weightLb: 0, weightOz: 0, lengthIn: 0 });
+    saveGrowthLog(entries);
+    renderGrowth();
+  });
+
+  /* ---------------- Init ---------------- */
   renderAge();
   renderCategories();
+  renderAllergies();
 </script>
 </body>
 </html>
