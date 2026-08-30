@@ -129,14 +129,31 @@ const REACTIONS = [
   { key: 'disliked', emoji: '\u{1F616}', label: "Didn't like it" }
 ];
 
-// Flat lookup: food id -> { name, emoji, category, color }
-const FOOD_INFO = {};
-FOOD_DATA.forEach(cat => {
-  cat.items.forEach(food => {
-    const id = slug(cat.name + '-' + food.name);
-    FOOD_INFO[id] = { name: food.name, emoji: food.emoji, category: cat.name, color: cat.color };
+const CUSTOM_STORAGE_KEY = 'jaxon-custom-foods-v1';
+const COMBO_STORAGE_KEY = 'jaxon-combo-foods-v1';
+const CUSTOM_COLOR = '#7A5C99';
+const COMBO_COLOR = '#C9A227';
+const CUSTOM_EMOJI = '\u{1F37D}\u{FE0F}';
+const COMBO_EMOJI = '\u{1F372}';
+
+// Flat lookup: food id -> { name, emoji, category, color }. Rebuilt on demand
+// so it always reflects the latest custom/combo entries.
+function buildFoodInfo(){
+  const info = {};
+  FOOD_DATA.forEach(cat => {
+    cat.items.forEach(food => {
+      const id = slug(cat.name + '-' + food.name);
+      info[id] = { name: food.name, emoji: food.emoji, category: cat.name, color: cat.color };
+    });
   });
-});
+  loadCustomFoods().forEach(entry => {
+    info['custom-' + entry.id] = { name: entry.name, emoji: CUSTOM_EMOJI, category: 'Custom foods', color: CUSTOM_COLOR };
+  });
+  loadComboFoods().forEach(entry => {
+    info['combo-' + entry.id] = { name: entry.name, emoji: COMBO_EMOJI, category: 'Food combos', color: COMBO_COLOR };
+  });
+  return info;
+}
 
 let expandedId = null;
 let weightChart = null;
@@ -162,6 +179,27 @@ function loadFoodState(){
 }
 function saveFoodState(state){
   localStorage.setItem(FOOD_STORAGE_KEY, JSON.stringify(state));
+}
+function removeFoodState(id){
+  const st = loadFoodState();
+  delete st[id];
+  saveFoodState(st);
+}
+
+function loadCustomFoods(){
+  try{ return JSON.parse(localStorage.getItem(CUSTOM_STORAGE_KEY)) || []; }
+  catch(e){ return []; }
+}
+function saveCustomFoods(list){
+  localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(list));
+}
+
+function loadComboFoods(){
+  try{ return JSON.parse(localStorage.getItem(COMBO_STORAGE_KEY)) || []; }
+  catch(e){ return []; }
+}
+function saveComboFoods(list){
+  localStorage.setItem(COMBO_STORAGE_KEY, JSON.stringify(list));
 }
 
 function loadGrowthLog(){
@@ -234,10 +272,103 @@ function renderCategories(){
     container.appendChild(section);
   });
 
+  container.appendChild(buildDynamicCategory({
+    title: 'Custom foods',
+    color: CUSTOM_COLOR,
+    idPrefix: 'custom',
+    list: loadCustomFoods(),
+    placeholder: 'Add a food not on the list…',
+    buttonLabel: 'Add food',
+    onAdd: (name) => {
+      const list = loadCustomFoods();
+      list.push({ id: uid(), name });
+      saveCustomFoods(list);
+    },
+    onDelete: (entryId) => {
+      const list = loadCustomFoods().filter(e => e.id !== entryId);
+      saveCustomFoods(list);
+      removeFoodState('custom-' + entryId);
+    }
+  }, state));
+
+  container.appendChild(buildDynamicCategory({
+    title: 'Food combos',
+    color: COMBO_COLOR,
+    idPrefix: 'combo',
+    list: loadComboFoods(),
+    placeholder: 'e.g. Chicken & sweet potato mash',
+    buttonLabel: 'Add combo',
+    onAdd: (name) => {
+      const list = loadComboFoods();
+      list.push({ id: uid(), name });
+      saveComboFoods(list);
+    },
+    onDelete: (entryId) => {
+      const list = loadComboFoods().filter(e => e.id !== entryId);
+      saveComboFoods(list);
+      removeFoodState('combo-' + entryId);
+    }
+  }, state));
+
   refreshCounts();
 }
 
-function buildFoodRow(id, foodName, entry){
+function buildDynamicCategory(opts, state){
+  const section = document.createElement('div');
+  section.className = 'category';
+  section.style.setProperty('--cat-color', opts.color);
+
+  const heading = document.createElement('h2');
+  heading.innerHTML = '<span class="dot"></span>' + opts.title +
+    ' <span class="count">(' + opts.list.length + ')</span>';
+  section.appendChild(heading);
+
+  const grid = document.createElement('div');
+  grid.className = 'food-grid';
+
+  opts.list.forEach(entry => {
+    const id = opts.idPrefix + '-' + entry.id;
+    grid.appendChild(buildFoodRow(id, entry.name, state[id] || {}, {
+      deletable: true,
+      onDelete: () => {
+        if (confirm('Remove "' + entry.name + '" from your list? This clears any logged info for it too.')){
+          opts.onDelete(entry.id);
+          if (expandedId === id) expandedId = null;
+          renderCategories();
+          renderAllergies();
+        }
+      }
+    }));
+  });
+
+  const addRow = document.createElement('div');
+  addRow.className = 'add-food-row';
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = opts.placeholder;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = opts.buttonLabel;
+  function submit(){
+    const val = input.value.trim();
+    if (!val) return;
+    opts.onAdd(val);
+    renderCategories();
+  }
+  btn.addEventListener('click', submit);
+  input.addEventListener('keydown', (evt) => {
+    if (evt.key === 'Enter'){ evt.preventDefault(); submit(); }
+  });
+  addRow.appendChild(input);
+  addRow.appendChild(btn);
+  grid.appendChild(addRow);
+
+  section.appendChild(grid);
+  return section;
+}
+
+function buildFoodRow(id, foodName, entry, opts){
+  opts = opts || {};
   const isChecked = !!entry.checked;
   const row = document.createElement('div');
   row.className = 'food-row' + (isChecked ? ' checked' : '') + (entry.allergic ? ' has-allergy' : '') + (expandedId === id ? ' expanded' : '');
@@ -264,6 +395,20 @@ function buildFoodRow(id, foodName, entry){
     flag.className = 'allergy-flag';
     flag.textContent = 'Reaction';
     main.appendChild(flag);
+  }
+
+  if (opts.deletable){
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'food-delete';
+    delBtn.textContent = '\u00d7';
+    delBtn.title = 'Remove this item';
+    delBtn.addEventListener('click', (evt) => {
+      evt.preventDefault();
+      evt.stopPropagation();
+      opts.onDelete();
+    });
+    main.appendChild(delBtn);
   }
 
   row.appendChild(main);
@@ -418,10 +563,11 @@ document.getElementById('reset-btn').addEventListener('click', () => {
 /* ---------------- Allergies tab ---------------- */
 function renderAllergies(){
   const state = loadFoodState();
+  const foodInfo = buildFoodInfo();
   const flagged = [];
   Object.keys(state).forEach(id => {
     const e = state[id];
-    const info = FOOD_INFO[id];
+    const info = foodInfo[id];
     if (e && e.allergic && info){
       flagged.push({ id, food: info.name, category: info.category, date: e.date, note: e.allergyNote });
     }
@@ -456,12 +602,13 @@ function renderAllergies(){
 /* ---------------- Calendar tab ---------------- */
 function renderCalendar(){
   const state = loadFoodState();
+  const foodInfo = buildFoodInfo();
 
   // group foods by the ISO date they were tried
   const byDate = {};
   Object.keys(state).forEach(id => {
     const e = state[id];
-    const info = FOOD_INFO[id];
+    const info = foodInfo[id];
     if (e && e.checked && e.date && info){
       if (!byDate[e.date]) byDate[e.date] = [];
       byDate[e.date].push(info);

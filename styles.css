@@ -368,6 +368,51 @@
     white-space: nowrap;
   }
 
+  .food-delete{
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+    flex-shrink: 0;
+  }
+  .food-delete:hover{ color: var(--alert); }
+
+  .add-food-row{
+    grid-column: 1 / -1;
+    display:flex;
+    gap: 8px;
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: transparent;
+  }
+
+  .add-food-row input[type="text"]{
+    flex:1;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-family: 'Karla', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+  }
+
+  .add-food-row button{
+    background: var(--fern);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-family: 'Karla', sans-serif;
+    font-size: 13px;
+    cursor:pointer;
+    white-space: nowrap;
+  }
+  .add-food-row button:hover{ filter: brightness(0.95); }
+
   .food-detail{
     margin-top: 10px;
     padding-top: 10px;
