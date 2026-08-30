@@ -24,6 +24,8 @@
     <span id="age-badge"></span>
   </header>
 
+  <div class="birthday-banner" id="birthday-banner"></div>
+
   <div class="sync-bar">
     <div class="user-select" id="user-select">
       <span class="user-label">Logging as:</span>
@@ -74,6 +76,10 @@
 
   <!-- FOODS PANEL -->
   <div class="panel active" id="panel-foods">
+    <div class="search-bar">
+      <input type="search" id="food-search" placeholder="Search foods…" aria-label="Search foods">
+    </div>
+
     <div class="try-next-section" id="try-next-section">
       <h3 class="try-next-title">Try next</h3>
       <div class="try-next-list" id="try-next-list"></div>
@@ -177,6 +183,9 @@
 
   <!-- STATS PANEL -->
   <div class="panel" id="panel-stats">
+    <h3 class="stats-subheading">Badges</h3>
+    <div class="badge-grid" id="badges-grid"></div>
+
     <div class="stat-grid" id="stats-grid"></div>
 
     <div class="chart-row">

@@ -1031,6 +1031,78 @@
     clip: rect(0,0,0,0);
   }
 
+  /* ---------- Birthday banner ---------- */
+  .birthday-banner{
+    display:none;
+    text-align:center;
+    font-family: 'Domine', serif;
+    font-size: 14px;
+    color: var(--carrot);
+    background: var(--carrot-dim);
+    border-radius: 999px;
+    padding: 9px 16px;
+    margin-bottom: 16px;
+  }
+
+  /* ---------- Search bar ---------- */
+  .search-bar{
+    margin-bottom: 18px;
+  }
+
+  .search-bar input[type="search"]{
+    width: 100%;
+    font-family: 'Karla', sans-serif;
+    font-size: 14.5px;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+  .search-bar input[type="search"]:focus{ border-color: var(--fern); }
+
+  /* ---------- Badges ---------- */
+  .stats-subheading{
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  .badge-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .badge-tile{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 10px;
+    text-align:center;
+    transition: opacity 0.2s ease;
+  }
+
+  .badge-tile.locked{
+    opacity: 0.35;
+    filter: grayscale(1);
+  }
+
+  .badge-icon{ font-size: 28px; line-height:1; }
+  .badge-title{
+    font-family: 'Domine', serif;
+    font-size: 12.5px;
+    margin-top: 6px;
+    color: var(--ink);
+  }
+  .badge-desc{
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
   /* ---------- Dark mode ---------- */
   body.dark{
     --bg: #1B211D;

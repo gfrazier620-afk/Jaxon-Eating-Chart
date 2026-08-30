@@ -528,6 +528,26 @@ function renderAge(){
   document.getElementById('age-badge').textContent = text + ' old';
 }
 
+function renderBirthdayBanner(){
+  const now = new Date();
+  const firstBirthday = new Date(BIRTH_DATE.getFullYear() + 1, BIRTH_DATE.getMonth(), BIRTH_DATE.getDate());
+  const diffDays = Math.ceil((firstBirthday - now) / 86400000);
+  const el = document.getElementById('birthday-banner');
+
+  if (diffDays > 1){
+    el.textContent = '\u{1F382} ' + diffDays + ' days until Jaxon\u2019s 1st birthday!';
+    el.style.display = '';
+  } else if (diffDays === 1){
+    el.textContent = '\u{1F382} 1 day until Jaxon\u2019s 1st birthday!';
+    el.style.display = '';
+  } else if (diffDays === 0){
+    el.textContent = '\u{1F389} Happy 1st birthday, Jaxon!';
+    el.style.display = '';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
 /* ---------------- Foods tab ---------------- */
 function renderCategories(){
   const state = loadFoodState();
@@ -596,7 +616,28 @@ function renderCategories(){
 
   refreshCounts();
   renderTryNext();
+  applyFoodSearch();
 }
+
+function applyFoodSearch(){
+  const input = document.getElementById('food-search');
+  const q = input ? input.value.trim().toLowerCase() : '';
+  document.querySelectorAll('#categories .category').forEach(cat => {
+    let anyVisible = false;
+    cat.querySelectorAll('.food-row').forEach(row => {
+      const label = row.querySelector('.food-label');
+      const name = label ? label.textContent.toLowerCase() : '';
+      const match = !q || name.includes(q);
+      row.style.display = match ? '' : 'none';
+      if (match) anyVisible = true;
+    });
+    const addRow = cat.querySelector('.add-food-row');
+    if (addRow) addRow.style.display = q ? 'none' : '';
+    cat.style.display = (!q || anyVisible) ? '' : 'none';
+  });
+}
+
+document.getElementById('food-search').addEventListener('input', applyFoodSearch);
 
 function renderTryNext(){
   const state = loadFoodState();
@@ -1527,21 +1568,53 @@ function longestStreak(dateSet){
   return longest;
 }
 
+function renderBadges(ctx){
+  const badges = [
+    { icon: '\u{1F37C}', title: 'First Bite', desc: 'Tried your first food', unlocked: ctx.tried >= 1 },
+    { icon: '\u{1F34E}', title: 'Fruit Explorer', desc: 'Tried every fruit', unlocked: ctx.categoryTotals['Fruits'] && ctx.categoryTotals['Fruits'].tried === ctx.categoryTotals['Fruits'].total },
+    { icon: '\u{1F966}', title: 'Veggie Explorer', desc: 'Tried every vegetable', unlocked: ctx.categoryTotals['Vegetables'] && ctx.categoryTotals['Vegetables'].tried === ctx.categoryTotals['Vegetables'].total },
+    { icon: '\u{1F357}', title: 'Protein Pro', desc: 'Tried every protein', unlocked: ctx.categoryTotals['Proteins'] && ctx.categoryTotals['Proteins'].tried === ctx.categoryTotals['Proteins'].total },
+    { icon: '\u{1F3C5}', title: 'Halfway There', desc: '50 of 100 foods tried', unlocked: ctx.tried >= 50 },
+    { icon: '\u{1F451}', title: 'Century Club', desc: 'All 100 foods tried', unlocked: ctx.tried >= 100 },
+    { icon: '\u{1F525}', title: '5-Day Streak', desc: 'A new food 5 days running', unlocked: ctx.streak >= 5 },
+    { icon: '\u{1F31F}', title: 'First Milestone', desc: 'Logged your first milestone', unlocked: ctx.milestonesReached >= 1 },
+    { icon: '\u{1F476}', title: 'On the Move', desc: 'Logged first steps', unlocked: ctx.firstStepsDone },
+    { icon: '\u{1F46A}', title: 'Team Effort', desc: 'Both parents have logged something', unlocked: ctx.loggedByCount >= 2 },
+    { icon: '\u{1F963}', title: 'Kitchen Creative', desc: 'Tried 3 custom foods or combos', unlocked: ctx.customComboTried >= 3 }
+  ];
+
+  const grid = document.getElementById('badges-grid');
+  grid.innerHTML = '';
+  badges.forEach(b => {
+    const tile = document.createElement('div');
+    tile.className = 'badge-tile' + (b.unlocked ? '' : ' locked');
+    tile.innerHTML =
+      '<div class="badge-icon">' + b.icon + '</div>' +
+      '<div class="badge-title">' + b.title + '</div>' +
+      '<div class="badge-desc">' + b.desc + '</div>';
+    grid.appendChild(tile);
+  });
+}
+
 function renderStats(){
   const state = loadFoodState();
   const foodInfo = buildFoodInfo();
   const milestoneState = loadMilestoneState();
 
-  let tried = 0, liked = 0, neutral = 0, disliked = 0, faces = 0, allergic = 0;
+  let tried = 0, liked = 0, neutral = 0, disliked = 0, faces = 0, allergic = 0, customComboTried = 0;
   const likedNames = [], dislikedNames = [];
   const daySet = new Set();
   const loggedByCounts = {};
+  const categoryTotals = {};
+  FOOD_DATA.forEach(cat => { categoryTotals[cat.name] = { total: cat.items.length, tried: 0 }; });
 
   Object.keys(state).forEach(id => {
     const e = state[id];
     const info = foodInfo[id];
     if (!e || !e.checked || !info) return;
     tried++;
+    if (categoryTotals[info.category]) categoryTotals[info.category].tried++;
+    if (info.category === 'Custom foods' || info.category === 'Food combos') customComboTried++;
     if (e.date) daySet.add(e.date);
     if (e.reaction === 'liked'){ liked++; likedNames.push(info.name); }
     if (e.reaction === 'neutral') neutral++;
@@ -1559,6 +1632,13 @@ function renderStats(){
   });
 
   const streak = longestStreak(daySet);
+  const firstStepsId = slug('Motor skills-First steps');
+  const firstStepsDone = !!(milestoneState[firstStepsId] && milestoneState[firstStepsId].achieved);
+
+  renderBadges({
+    tried, streak, milestonesReached, customComboTried, categoryTotals, firstStepsDone,
+    loggedByCount: Object.keys(loggedByCounts).length
+  });
 
   // stat tiles
   const tiles = [
@@ -1754,6 +1834,7 @@ document.getElementById('print-btn').addEventListener('click', () => {
 /* ---------------- Init ---------------- */
 applyTheme(loadTheme());
 renderAge();
+renderBirthdayBanner();
 renderCategories();
 renderAllergies();
 renderUserBadge();
