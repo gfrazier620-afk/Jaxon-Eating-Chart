@@ -1,6 +1,33 @@
 const BIRTH_DATE = new Date(2026, 1, 23); // Feb 23, 2026
 const FOOD_STORAGE_KEY = 'jaxon-first-foods-v1';
 const GROWTH_STORAGE_KEY = 'jaxon-growth-log-v1';
+const MILESTONE_STORAGE_KEY = 'jaxon-milestones-v1';
+const CUSTOM_MILESTONE_STORAGE_KEY = 'jaxon-custom-milestones-v1';
+const CURRENT_USER_KEY = 'jaxon-current-user';
+
+const MILESTONE_DATA = [
+  { name: 'Motor skills', color: '#4F7942', items: [
+    'Held head up steady','Rolled tummy to back','Rolled back to tummy','Sat up unassisted',
+    'Pushed up on hands and knees','Crawled','Pulled to stand','Cruised along furniture',
+    'Stood alone','First steps','Walked independently','Climbed stairs'
+  ]},
+  { name: 'Communication', color: '#D9643A', items: [
+    'First real smile','Cooed','Babbled (ba-ba, da-da)','Said first word','Waved bye-bye',
+    'Pointed at things','Said "mama" or "dada" on purpose','Followed a simple instruction'
+  ]},
+  { name: 'Social & emotional', color: '#8B3A62', items: [
+    'Laughed out loud','Recognized familiar faces','Stranger anxiety showed up','Played peekaboo',
+    'Clapped hands','Gave hugs or kisses'
+  ]},
+  { name: 'Cognitive', color: '#4A7A96', items: [
+    'Reached for objects','Passed object hand to hand','Found a partly hidden object',
+    'Looked for a dropped object','Imitated sounds or actions','Explored by banging or shaking things'
+  ]},
+  { name: 'Firsts & keepsakes', color: '#B98B4E', items: [
+    'First tooth','First haircut','First taste of outdoors (grass, sand, snow)',
+    'First trip away from home','First holiday','First birthday'
+  ]}
+];
 
 const FOOD_DATA = [
   { name: 'Fruits', color: '#D9643A', items: [
@@ -135,6 +162,7 @@ const CUSTOM_COLOR = '#7A5C99';
 const COMBO_COLOR = '#C9A227';
 const CUSTOM_EMOJI = '\u{1F37D}\u{FE0F}';
 const COMBO_EMOJI = '\u{1F372}';
+const CUSTOM_MILESTONE_COLOR = '#7A5C99';
 
 // Flat lookup: food id -> { name, emoji, category, color }. Rebuilt on demand
 // so it always reflects the latest custom/combo entries.
@@ -153,6 +181,29 @@ function buildFoodInfo(){
     info['combo-' + entry.id] = { name: entry.name, emoji: COMBO_EMOJI, category: 'Food combos', color: COMBO_COLOR };
   });
   return info;
+}
+
+// Flat lookup: milestone id -> { name, category, color }
+function buildMilestoneInfo(){
+  const info = {};
+  MILESTONE_DATA.forEach(cat => {
+    cat.items.forEach(name => {
+      const id = slug(cat.name + '-' + name);
+      info[id] = { name, category: cat.name, color: cat.color };
+    });
+  });
+  loadCustomMilestones().forEach(entry => {
+    info['custom-milestone-' + entry.id] = { name: entry.name, category: 'Custom milestones', color: CUSTOM_MILESTONE_COLOR };
+  });
+  return info;
+}
+
+function getCurrentUser(){
+  return localStorage.getItem(CURRENT_USER_KEY) || '';
+}
+function setCurrentUser(name){
+  localStorage.setItem(CURRENT_USER_KEY, name);
+  renderUserBadge();
 }
 
 let expandedId = null;
@@ -214,6 +265,30 @@ function saveComboFoods(list){
   pushToCloud({ comboFoods: list });
 }
 
+function loadMilestoneState(){
+  try{ return JSON.parse(localStorage.getItem(MILESTONE_STORAGE_KEY)) || {}; }
+  catch(e){ return {}; }
+}
+function saveMilestoneStateLocal(state){
+  localStorage.setItem(MILESTONE_STORAGE_KEY, JSON.stringify(state));
+}
+function saveMilestoneState(state){
+  saveMilestoneStateLocal(state);
+  pushToCloud({ milestones: state });
+}
+
+function loadCustomMilestones(){
+  try{ return JSON.parse(localStorage.getItem(CUSTOM_MILESTONE_STORAGE_KEY)) || []; }
+  catch(e){ return []; }
+}
+function saveCustomMilestonesLocal(list){
+  localStorage.setItem(CUSTOM_MILESTONE_STORAGE_KEY, JSON.stringify(list));
+}
+function saveCustomMilestones(list){
+  saveCustomMilestonesLocal(list);
+  pushToCloud({ customMilestones: list });
+}
+
 function loadGrowthLog(){
   try{
     const raw = localStorage.getItem(GROWTH_STORAGE_KEY);
@@ -270,7 +345,9 @@ function startSync(){
         foods: loadFoodState(),
         growth: loadGrowthLog(),
         customFoods: loadCustomFoods(),
-        comboFoods: loadComboFoods()
+        comboFoods: loadComboFoods(),
+        milestones: loadMilestoneState(),
+        customMilestones: loadCustomMilestones()
       });
       setSyncStatus('connected', 'Synced live \u2014 changes sync automatically between devices.');
       return;
@@ -282,6 +359,8 @@ function startSync(){
     if (data.growth) saveGrowthLogLocal(data.growth);
     if (data.customFoods) saveCustomFoodsLocal(data.customFoods);
     if (data.comboFoods) saveComboFoodsLocal(data.comboFoods);
+    if (data.milestones) saveMilestoneStateLocal(data.milestones);
+    if (data.customMilestones) saveCustomMilestonesLocal(data.customMilestones);
     applyingRemoteUpdate = false;
 
     setSyncStatus('connected', 'Synced live \u2014 changes sync automatically between devices.');
@@ -289,6 +368,8 @@ function startSync(){
     renderAllergies();
     if (document.getElementById('panel-growth').classList.contains('active')) renderGrowth();
     if (document.getElementById('panel-calendar').classList.contains('active')) renderCalendar();
+    if (document.getElementById('panel-milestones').classList.contains('active')) renderMilestones();
+    if (document.getElementById('panel-stats').classList.contains('active')) renderStats();
   }, (err) => {
     console.warn('Sync unavailable:', err.message);
     setSyncStatus('error', "Couldn't connect \u2014 check your Firebase config and Firestore rules.");
@@ -296,7 +377,7 @@ function startSync(){
 }
 
 /* ---------------- Tabs ---------------- */
-const TAB_LABELS = { foods: 'Foods', calendar: 'Calendar', growth: 'Growth', allergies: 'Allergies' };
+const TAB_LABELS = { foods: 'Foods', milestones: 'Milestones', calendar: 'Calendar', growth: 'Growth', stats: 'Stats', allergies: 'Allergies' };
 const menuToggle = document.getElementById('menu-toggle');
 const tabsEl = document.getElementById('tabs');
 const currentTabLabel = document.getElementById('current-tab-label');
@@ -317,7 +398,33 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     menuToggle.setAttribute('aria-expanded', 'false');
     if (btn.dataset.tab === 'growth') renderGrowth();
     if (btn.dataset.tab === 'calendar') renderCalendar();
+    if (btn.dataset.tab === 'milestones') renderMilestones();
+    if (btn.dataset.tab === 'stats') renderStats();
   });
+});
+
+/* ---------------- Who's logging ---------------- */
+function renderUserBadge(){
+  const current = getCurrentUser();
+  document.querySelectorAll('.user-btn[data-user]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.user === current);
+  });
+  const otherBtn = document.getElementById('user-other-btn');
+  if (current && current !== 'Mom' && current !== 'Dad'){
+    otherBtn.textContent = current;
+    otherBtn.classList.add('active');
+  } else {
+    otherBtn.textContent = 'Other';
+    otherBtn.classList.remove('active');
+  }
+}
+
+document.querySelectorAll('.user-btn[data-user]').forEach(btn => {
+  btn.addEventListener('click', () => setCurrentUser(btn.dataset.user));
+});
+document.getElementById('user-other-btn').addEventListener('click', () => {
+  const name = prompt("Who's logging? (e.g. Grandma, Nanny)", getCurrentUser());
+  if (name && name.trim()) setCurrentUser(name.trim());
 });
 
 /* ---------------- Age badge ---------------- */
@@ -508,6 +615,7 @@ function buildFoodRow(id, foodName, entry, opts){
     const e = st[id] || {};
     e.checked = checkbox.checked;
     if (checkbox.checked && !e.date) e.date = todayISO();
+    if (checkbox.checked && getCurrentUser()) e.loggedBy = getCurrentUser();
     st[id] = e;
     saveFoodState(st);
     expandedId = checkbox.checked ? id : (expandedId === id ? null : expandedId);
@@ -547,6 +655,20 @@ function buildFoodDetail(id, entry){
   dateRow.appendChild(dateLbl);
   dateRow.appendChild(dateInput);
   detail.appendChild(dateRow);
+
+  if (entry.loggedBy){
+    const byRow = document.createElement('div');
+    byRow.className = 'detail-row';
+    const byLbl = document.createElement('span');
+    byLbl.className = 'field-label';
+    byLbl.textContent = 'Logged by';
+    const byVal = document.createElement('span');
+    byVal.className = 'logged-by-value';
+    byVal.textContent = entry.loggedBy;
+    byRow.appendChild(byLbl);
+    byRow.appendChild(byVal);
+    detail.appendChild(byRow);
+  }
 
   // reaction row
   const reactRow = document.createElement('div');
@@ -622,6 +744,7 @@ function buildFoodDetail(id, entry){
 
 function updateFoodEntry(id, patch){
   const st = loadFoodState();
+  if (getCurrentUser()) patch = Object.assign({}, patch, { loggedBy: getCurrentUser() });
   st[id] = Object.assign({}, st[id] || {}, patch);
   saveFoodState(st);
   renderCategories();
@@ -687,6 +810,231 @@ function renderAllergies(){
       (f.note ? '<div class="a-note">' + f.note.replace(/</g,'&lt;') + '</div>' : '');
     list.appendChild(item);
   });
+}
+
+/* ---------------- Milestones tab ---------------- */
+function renderMilestones(){
+  const state = loadMilestoneState();
+  const container = document.getElementById('milestone-categories');
+  container.innerHTML = '';
+
+  MILESTONE_DATA.forEach(cat => {
+    const section = document.createElement('div');
+    section.className = 'category';
+    section.style.setProperty('--cat-color', cat.color);
+
+    const heading = document.createElement('h2');
+    heading.innerHTML = '<span class="dot"></span>' + cat.name +
+      ' <span class="count" data-mcount="' + cat.name + '"></span>';
+    section.appendChild(heading);
+
+    const grid = document.createElement('div');
+    grid.className = 'food-grid';
+
+    cat.items.forEach(name => {
+      const id = slug(cat.name + '-' + name);
+      grid.appendChild(buildMilestoneRow(id, name, state[id] || {}));
+    });
+
+    section.appendChild(grid);
+    container.appendChild(section);
+  });
+
+  container.appendChild(buildDynamicMilestoneCategory(state));
+  refreshMilestoneCounts();
+}
+
+function buildMilestoneRow(id, name, entry, opts){
+  opts = opts || {};
+  const isChecked = !!entry.achieved;
+  const row = document.createElement('div');
+  row.className = 'food-row' + (isChecked ? ' checked' : '') + (expandedId === ('m-' + id) ? ' expanded' : '');
+  row.dataset.id = id;
+
+  const main = document.createElement('div');
+  main.className = 'food-main';
+
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.id = 'milestone-' + id;
+  checkbox.checked = isChecked;
+
+  const label = document.createElement('label');
+  label.className = 'food-label';
+  label.htmlFor = 'milestone-' + id;
+  label.textContent = name;
+
+  main.appendChild(checkbox);
+  main.appendChild(label);
+
+  if (opts.deletable){
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'food-delete';
+    delBtn.textContent = '\u00d7';
+    delBtn.title = 'Remove this item';
+    delBtn.addEventListener('click', (evt) => {
+      evt.preventDefault();
+      evt.stopPropagation();
+      opts.onDelete();
+    });
+    main.appendChild(delBtn);
+  }
+
+  row.appendChild(main);
+
+  checkbox.addEventListener('change', () => {
+    const st = loadMilestoneState();
+    const e = st[id] || {};
+    e.achieved = checkbox.checked;
+    if (checkbox.checked && !e.date) e.date = todayISO();
+    if (checkbox.checked && getCurrentUser()) e.loggedBy = getCurrentUser();
+    st[id] = e;
+    saveMilestoneState(st);
+    expandedId = checkbox.checked ? ('m-' + id) : (expandedId === ('m-' + id) ? null : expandedId);
+    renderMilestones();
+  });
+
+  if (isChecked){
+    label.addEventListener('click', (evt) => {
+      evt.preventDefault();
+      expandedId = (expandedId === ('m-' + id)) ? null : ('m-' + id);
+      renderMilestones();
+    });
+
+    if (expandedId === ('m-' + id)){
+      row.appendChild(buildMilestoneDetail(id, entry));
+    }
+  }
+
+  return row;
+}
+
+function buildMilestoneDetail(id, entry){
+  const detail = document.createElement('div');
+  detail.className = 'food-detail';
+
+  const dateRow = document.createElement('div');
+  dateRow.className = 'detail-row';
+  const dateLbl = document.createElement('span');
+  dateLbl.className = 'field-label';
+  dateLbl.textContent = 'Date';
+  const dateInput = document.createElement('input');
+  dateInput.type = 'date';
+  dateInput.value = entry.date || todayISO();
+  dateInput.addEventListener('change', () => updateMilestoneEntry(id, { date: dateInput.value }));
+  dateRow.appendChild(dateLbl);
+  dateRow.appendChild(dateInput);
+  detail.appendChild(dateRow);
+
+  if (entry.loggedBy){
+    const byRow = document.createElement('div');
+    byRow.className = 'detail-row';
+    const byLbl = document.createElement('span');
+    byLbl.className = 'field-label';
+    byLbl.textContent = 'Logged by';
+    const byVal = document.createElement('span');
+    byVal.className = 'logged-by-value';
+    byVal.textContent = entry.loggedBy;
+    byRow.appendChild(byLbl);
+    byRow.appendChild(byVal);
+    detail.appendChild(byRow);
+  }
+
+  const noteRow = document.createElement('div');
+  noteRow.className = 'detail-row';
+  const noteInput = document.createElement('input');
+  noteInput.type = 'text';
+  noteInput.className = 'allergy-note';
+  noteInput.placeholder = 'Add a note (optional)';
+  noteInput.value = entry.note || '';
+  noteInput.addEventListener('change', () => updateMilestoneEntry(id, { note: noteInput.value }));
+  noteRow.appendChild(noteInput);
+  detail.appendChild(noteRow);
+
+  return detail;
+}
+
+function updateMilestoneEntry(id, patch){
+  const st = loadMilestoneState();
+  if (getCurrentUser()) patch = Object.assign({}, patch, { loggedBy: getCurrentUser() });
+  st[id] = Object.assign({}, st[id] || {}, patch);
+  saveMilestoneState(st);
+  renderMilestones();
+}
+
+function buildDynamicMilestoneCategory(state){
+  const section = document.createElement('div');
+  section.className = 'category';
+  section.style.setProperty('--cat-color', CUSTOM_MILESTONE_COLOR);
+
+  const list = loadCustomMilestones();
+  const heading = document.createElement('h2');
+  heading.innerHTML = '<span class="dot"></span>Custom milestones <span class="count">(' + list.length + ')</span>';
+  section.appendChild(heading);
+
+  const grid = document.createElement('div');
+  grid.className = 'food-grid';
+
+  list.forEach(entry => {
+    const id = 'custom-milestone-' + entry.id;
+    grid.appendChild(buildMilestoneRow(id, entry.name, state[id] || {}, {
+      deletable: true,
+      onDelete: () => {
+        if (confirm('Remove "' + entry.name + '" from your milestones?')){
+          const newList = loadCustomMilestones().filter(e => e.id !== entry.id);
+          saveCustomMilestones(newList);
+          const st = loadMilestoneState();
+          delete st[id];
+          saveMilestoneState(st);
+          if (expandedId === ('m-' + id)) expandedId = null;
+          renderMilestones();
+        }
+      }
+    }));
+  });
+
+  const addRow = document.createElement('div');
+  addRow.className = 'add-food-row';
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = 'e.g. Started daycare';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = 'Add milestone';
+  function submit(){
+    const val = input.value.trim();
+    if (!val) return;
+    const newList = loadCustomMilestones();
+    newList.push({ id: uid(), name: val });
+    saveCustomMilestones(newList);
+    renderMilestones();
+  }
+  btn.addEventListener('click', submit);
+  input.addEventListener('keydown', (evt) => { if (evt.key === 'Enter'){ evt.preventDefault(); submit(); } });
+  addRow.appendChild(input);
+  addRow.appendChild(btn);
+  grid.appendChild(addRow);
+
+  section.appendChild(grid);
+  return section;
+}
+
+function refreshMilestoneCounts(){
+  const state = loadMilestoneState();
+  let total = 0, reached = 0;
+  MILESTONE_DATA.forEach(cat => {
+    const reachedInCat = cat.items.filter(name => {
+      const e = state[slug(cat.name + '-' + name)];
+      return e && e.achieved;
+    }).length;
+    total += cat.items.length;
+    reached += reachedInCat;
+    const span = document.querySelector('[data-mcount="' + CSS.escape(cat.name) + '"]');
+    if (span) span.textContent = reachedInCat + '/' + cat.items.length;
+  });
+  document.getElementById('milestone-progress-count').textContent = reached + ' of ' + total + ' reached';
+  document.getElementById('milestone-progress-fill').style.width = (total ? (reached / total * 100) : 0) + '%';
 }
 
 /* ---------------- Calendar tab ---------------- */
@@ -918,6 +1266,108 @@ document.getElementById('add-entry-btn').addEventListener('click', () => {
   renderGrowth();
 });
 
+/* ---------------- Stats tab ---------------- */
+let statsChart = null;
+
+function longestStreak(dateSet){
+  const dates = Array.from(dateSet).sort();
+  if (!dates.length) return 0;
+  let longest = 1, current = 1;
+  for (let i = 1; i < dates.length; i++){
+    const prev = new Date(dates[i-1] + 'T00:00:00');
+    const cur = new Date(dates[i] + 'T00:00:00');
+    const diffDays = Math.round((cur - prev) / 86400000);
+    if (diffDays === 1) { current++; longest = Math.max(longest, current); }
+    else if (diffDays > 1) { current = 1; }
+  }
+  return longest;
+}
+
+function renderStats(){
+  const state = loadFoodState();
+  const foodInfo = buildFoodInfo();
+  const milestoneState = loadMilestoneState();
+
+  let tried = 0, liked = 0, neutral = 0, disliked = 0, faces = 0, allergic = 0;
+  const likedNames = [], dislikedNames = [];
+  const daySet = new Set();
+  const loggedByCounts = {};
+
+  Object.keys(state).forEach(id => {
+    const e = state[id];
+    const info = foodInfo[id];
+    if (!e || !e.checked || !info) return;
+    tried++;
+    if (e.date) daySet.add(e.date);
+    if (e.reaction === 'liked'){ liked++; likedNames.push(info.name); }
+    if (e.reaction === 'neutral') neutral++;
+    if (e.reaction === 'disliked'){ disliked++; dislikedNames.push(info.name); }
+    if (e.face) faces++;
+    if (e.allergic) allergic++;
+    if (e.loggedBy) loggedByCounts[e.loggedBy] = (loggedByCounts[e.loggedBy] || 0) + 1;
+  });
+
+  let milestonesReached = 0, milestonesTotal = 0;
+  MILESTONE_DATA.forEach(cat => { milestonesTotal += cat.items.length; });
+  milestonesTotal += loadCustomMilestones().length;
+  Object.keys(milestoneState).forEach(id => {
+    if (milestoneState[id] && milestoneState[id].achieved) milestonesReached++;
+  });
+
+  const streak = longestStreak(daySet);
+
+  // stat tiles
+  const tiles = [
+    { label: 'Foods tried', value: tried + ' / 100' },
+    { label: 'Milestones reached', value: milestonesReached + ' / ' + milestonesTotal },
+    { label: 'Longest streak', value: streak + (streak === 1 ? ' day' : ' days') },
+    { label: 'Made a face', value: String(faces) },
+    { label: 'Allergic reactions', value: String(allergic) }
+  ];
+  Object.keys(loggedByCounts).forEach(name => {
+    tiles.push({ label: name + ' logged', value: String(loggedByCounts[name]) });
+  });
+
+  const grid = document.getElementById('stats-grid');
+  grid.innerHTML = '';
+  tiles.forEach(t => {
+    const tile = document.createElement('div');
+    tile.className = 'stat-tile';
+    tile.innerHTML = '<div class="stat-value">' + t.value + '</div><div class="stat-label">' + t.label + '</div>';
+    grid.appendChild(tile);
+  });
+
+  // liked / disliked lists
+  const likedEl = document.getElementById('stats-liked');
+  likedEl.innerHTML = likedNames.length
+    ? likedNames.map(n => '<li>' + n + '</li>').join('')
+    : '<li class="stats-empty">Nothing marked yet</li>';
+
+  const dislikedEl = document.getElementById('stats-disliked');
+  dislikedEl.innerHTML = dislikedNames.length
+    ? dislikedNames.map(n => '<li>' + n + '</li>').join('')
+    : '<li class="stats-empty">Nothing marked yet</li>';
+
+  // reaction chart
+  if (statsChart) statsChart.destroy();
+  const ctx = document.getElementById('stats-chart').getContext('2d');
+  statsChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Liked', 'Neutral', 'Disliked'],
+      datasets: [{
+        data: [liked, neutral, disliked],
+        backgroundColor: ['#4F7942', '#B98B4E', '#B23A48'],
+        borderRadius: 4
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+}
+
 /* ---------------- Backup / restore ---------------- */
 const syncToggle = document.getElementById('sync-toggle');
 const syncPanel = document.getElementById('sync-panel');
@@ -989,8 +1439,77 @@ document.getElementById('import-file').addEventListener('change', (evt) => {
   reader.readAsText(file);
 });
 
+/* ---------------- Print keepsake ---------------- */
+function buildKeepsakeHTML(){
+  const state = loadFoodState();
+  const foodInfo = buildFoodInfo();
+  const milestoneState = loadMilestoneState();
+  const milestoneInfo = buildMilestoneInfo();
+  const growth = loadGrowthLog().slice().sort((a,b) => a.date.localeCompare(b.date));
+
+  const esc = (s) => String(s).replace(/</g, '&lt;');
+  const fmtDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+
+  let html = '<h1>Jaxon\u2019s First Foods \u2014 Keepsake</h1>';
+  html += '<p class="k-sub">Printed ' + fmtDate(todayISO()) + '</p>';
+
+  if (growth.length){
+    const latest = growth[growth.length - 1];
+    html += '<h2>Growth</h2>';
+    html += '<p>Birth (Feb 23, 2026): 6 lb 11 oz, 19.5 in long.<br>' +
+      'Latest (' + fmtDate(latest.date) + '): ' + latest.weightLb + ' lb ' + latest.weightOz + ' oz, ' +
+      latest.lengthIn + ' in long' + (latest.headIn ? ', head ' + latest.headIn + ' in' : '') + '.</p>';
+  }
+
+  const triedByCategory = {};
+  Object.keys(state).forEach(id => {
+    const e = state[id];
+    const info = foodInfo[id];
+    if (e && e.checked && info){
+      if (!triedByCategory[info.category]) triedByCategory[info.category] = [];
+      triedByCategory[info.category].push({ name: info.name, date: e.date, reaction: e.reaction, note: e.allergyNote, allergic: e.allergic });
+    }
+  });
+  const triedCount = Object.values(triedByCategory).reduce((sum, arr) => sum + arr.length, 0);
+
+  html += '<h2>Foods tried (' + triedCount + ' of 100)</h2>';
+  Object.keys(triedByCategory).forEach(cat => {
+    html += '<h3>' + esc(cat) + '</h3><ul>';
+    triedByCategory[cat].sort((a,b) => (a.date||'').localeCompare(b.date||'')).forEach(f => {
+      const reactionWord = f.reaction === 'liked' ? 'Liked it' : f.reaction === 'disliked' ? "Didn't like it" : f.reaction === 'neutral' ? 'Neutral' : '';
+      html += '<li>' + esc(f.name) + (f.date ? ' \u2014 ' + fmtDate(f.date) : '') +
+        (reactionWord ? ' (' + reactionWord + ')' : '') +
+        (f.allergic ? ' \u26a0 reaction noted' + (f.note ? ': ' + esc(f.note) : '') : '') +
+        '</li>';
+    });
+    html += '</ul>';
+  });
+
+  const reachedList = [];
+  Object.keys(milestoneState).forEach(id => {
+    const e = milestoneState[id];
+    const info = milestoneInfo[id];
+    if (e && e.achieved && info) reachedList.push({ name: info.name, date: e.date, note: e.note });
+  });
+  if (reachedList.length){
+    html += '<h2>Milestones reached</h2><ul>';
+    reachedList.sort((a,b) => (a.date||'').localeCompare(b.date||'')).forEach(m => {
+      html += '<li>' + esc(m.name) + (m.date ? ' \u2014 ' + fmtDate(m.date) : '') + (m.note ? ' \u2014 ' + esc(m.note) : '') + '</li>';
+    });
+    html += '</ul>';
+  }
+
+  return html;
+}
+
+document.getElementById('print-btn').addEventListener('click', () => {
+  document.getElementById('print-keepsake').innerHTML = buildKeepsakeHTML();
+  window.print();
+});
+
 /* ---------------- Init ---------------- */
 renderAge();
 renderCategories();
 renderAllergies();
+renderUserBadge();
 startSync();

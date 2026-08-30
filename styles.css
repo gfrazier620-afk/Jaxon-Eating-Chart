@@ -73,8 +73,53 @@
   /* ---------- Backup / sync ---------- */
   .sync-bar{
     display:flex;
-    justify-content:flex-end;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap: wrap;
+    gap: 10px;
     margin-bottom: 14px;
+  }
+
+  .sync-bar-actions{
+    display:flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .user-select{
+    display:flex;
+    align-items:center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .user-label{
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+
+  .user-btn{
+    font-family: 'Karla', sans-serif;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 12px;
+    cursor:pointer;
+  }
+  .user-btn.active{
+    background: var(--fern-dim);
+    border-color: var(--fern);
+    color: var(--fern);
+    font-weight: 700;
+  }
+  .user-btn:hover{ border-color: var(--fern); }
+
+  .logged-by-value{
+    font-size: 13px;
+    color: var(--ink);
+    font-weight: 600;
   }
 
   .sync-toggle-btn{
@@ -809,4 +854,69 @@
 
   @media (prefers-reduced-motion: reduce){
     .progress-fill{ transition:none; }
+  }
+
+  /* ---------- Stats tab ---------- */
+  .stat-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .stat-tile{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 14px;
+    text-align:center;
+  }
+
+  .stat-value{
+    font-family: 'Domine', serif;
+    font-size: 22px;
+    color: var(--fern);
+  }
+
+  .stat-label{
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 4px;
+  }
+
+  .stats-list{
+    list-style:none;
+    margin:0; padding:0;
+    font-size: 14px;
+    max-height: 220px;
+    overflow-y:auto;
+  }
+  .stats-list li{
+    padding: 5px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .stats-list li:last-child{ border-bottom:none; }
+  .stats-list .stats-empty{ color: var(--ink-soft); font-style: italic; }
+
+  /* ---------- Print keepsake ---------- */
+  .print-only{ display:none; }
+
+  @media print{
+    body *{ visibility:hidden; }
+    .print-only, .print-only *{ visibility:visible; }
+    .print-only{
+      display:block;
+      position:absolute;
+      top:0; left:0;
+      width:100%;
+      padding: 20px;
+      font-family: 'Karla', Arial, sans-serif;
+      color:#000;
+    }
+    .print-only h1{ font-family:'Domine', Georgia, serif; font-size:22px; margin-bottom:2px; }
+    .print-only h2{ font-family:'Domine', Georgia, serif; font-size:17px; margin-top:20px; border-bottom:1px solid #999; padding-bottom:4px; }
+    .print-only h3{ font-size:14px; margin-top:14px; margin-bottom:4px; }
+    .print-only .k-sub{ color:#555; font-size:12px; margin-top:0; }
+    .print-only ul{ margin:4px 0 8px; padding-left:20px; font-size:13px; }
+    .print-only li{ margin-bottom:2px; }
   }

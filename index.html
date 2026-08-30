@@ -25,7 +25,16 @@
   </header>
 
   <div class="sync-bar">
-    <button class="sync-toggle-btn" id="sync-toggle" type="button">Backup / restore data</button>
+    <div class="user-select" id="user-select">
+      <span class="user-label">Logging as:</span>
+      <button class="user-btn" data-user="Mom" type="button">Mom</button>
+      <button class="user-btn" data-user="Dad" type="button">Dad</button>
+      <button class="user-btn" id="user-other-btn" type="button">Other</button>
+    </div>
+    <div class="sync-bar-actions">
+      <button class="sync-toggle-btn" id="print-btn" type="button">Print keepsake</button>
+      <button class="sync-toggle-btn" id="sync-toggle" type="button">Backup / restore data</button>
+    </div>
   </div>
 
   <div class="sync-panel" id="sync-panel" hidden>
@@ -54,8 +63,10 @@
 
   <div class="tabs" id="tabs">
     <button class="tab-btn active" data-tab="foods" type="button">Foods</button>
+    <button class="tab-btn" data-tab="milestones" type="button">Milestones</button>
     <button class="tab-btn" data-tab="calendar" type="button">Calendar</button>
     <button class="tab-btn" data-tab="growth" type="button">Growth</button>
+    <button class="tab-btn" data-tab="stats" type="button">Stats</button>
     <button class="tab-btn" data-tab="allergies" type="button">Allergies <span class="badge" id="allergy-badge" style="display:none;"></span></button>
   </div>
 
@@ -75,6 +86,15 @@
     <div class="actions">
       <button class="reset-btn" id="reset-btn" type="button">Reset all checkmarks</button>
     </div>
+  </div>
+
+  <!-- MILESTONES PANEL -->
+  <div class="panel" id="panel-milestones">
+    <div class="progress-row">
+      <div class="progress-track"><div class="progress-fill" id="milestone-progress-fill"></div></div>
+      <span class="progress-count" id="milestone-progress-count">0 reached</span>
+    </div>
+    <div id="milestone-categories"></div>
   </div>
 
   <!-- CALENDAR PANEL -->
@@ -143,12 +163,34 @@
     </div>
   </div>
 
+  <!-- STATS PANEL -->
+  <div class="panel" id="panel-stats">
+    <div class="stat-grid" id="stats-grid"></div>
+
+    <div class="chart-row">
+      <div class="chart-card">
+        <h3>Reactions so far</h3>
+        <canvas id="stats-chart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Loved it 😋</h3>
+        <ul class="stats-list" id="stats-liked"></ul>
+      </div>
+      <div class="chart-card">
+        <h3>Not a fan 😖</h3>
+        <ul class="stats-list" id="stats-disliked"></ul>
+      </div>
+    </div>
+  </div>
+
   <!-- ALLERGIES PANEL -->
   <div class="panel" id="panel-allergies">
     <div id="allergy-list"></div>
   </div>
 
 </div>
+
+<div class="print-only" id="print-keepsake"></div>
 
 <script src="script.js"></script>
 </body>
