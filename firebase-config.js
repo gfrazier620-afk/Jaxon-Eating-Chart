@@ -27,12 +27,12 @@
 // ---------------------------------------------------------------------------
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDj6kzmE2hvH8KhZVrMSYOATcwJNupFIjU",
+  authDomain: "jaxon-food-list.firebaseapp.com",
+  projectId: "jaxon-food-list",
+  storageBucket: "jaxon-food-list.firebasestorage.app",
+  messagingSenderId: "408569455536",
+  appId: "1:408569455536:web:4fdd9cb42d2d4459dfec75"
 };
 
 let db = null;
