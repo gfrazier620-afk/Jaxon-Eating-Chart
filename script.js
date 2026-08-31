@@ -450,6 +450,7 @@ function startSync(){
     if (document.getElementById('panel-milestones').classList.contains('active')) renderMilestones();
     if (document.getElementById('panel-stats').classList.contains('active')) renderStats();
     if (document.getElementById('panel-timeline').classList.contains('active')) renderTimeline();
+    if (document.getElementById('panel-safety').classList.contains('active')) renderAllergenTracker();
   }, (err) => {
     console.warn('Sync unavailable:', err.message);
     setSyncStatus('error', "Couldn't connect \u2014 check your Firebase config and Firestore rules.");
@@ -457,7 +458,7 @@ function startSync(){
 }
 
 /* ---------------- Tabs ---------------- */
-const TAB_LABELS = { foods: 'Foods', milestones: 'Milestones', timeline: 'Timeline', calendar: 'Calendar', growth: 'Growth', stats: 'Stats', guide: 'Guide', allergies: 'Allergies' };
+const TAB_LABELS = { foods: 'Foods', milestones: 'Milestones', timeline: 'Timeline', calendar: 'Calendar', growth: 'Growth', stats: 'Stats', guide: 'Guide', safety: 'Safety', allergies: 'Allergies' };
 const menuToggle = document.getElementById('menu-toggle');
 const tabsEl = document.getElementById('tabs');
 const currentTabLabel = document.getElementById('current-tab-label');
@@ -481,6 +482,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'milestones') renderMilestones();
     if (btn.dataset.tab === 'stats') renderStats();
     if (btn.dataset.tab === 'timeline') renderTimeline();
+    if (btn.dataset.tab === 'safety') renderAllergenTracker();
   });
 });
 
@@ -980,6 +982,53 @@ document.getElementById('reset-btn').addEventListener('click', () => {
     renderAllergies();
   }
 });
+
+/* ---------------- Safety tab ---------------- */
+const ALLERGEN_DEFS = [
+  { label: 'Milk / Dairy', emoji: '\u{1F95B}', keywords: ['yogurt', 'yoghurt', 'cheese', 'milk', 'kefir'] },
+  { label: 'Egg', emoji: '\u{1F95A}', keywords: ['egg'] },
+  { label: 'Peanut', emoji: '\u{1F95C}', keywords: ['peanut'] },
+  { label: 'Tree nuts', emoji: '\u{1F330}', keywords: ['almond', 'cashew', 'walnut', 'pecan', 'hazelnut', 'pistachio', 'macadamia'] },
+  { label: 'Soy', emoji: '\u{1F331}', keywords: ['soy', 'edamame', 'tofu'] },
+  { label: 'Wheat', emoji: '\u{1F33E}', keywords: ['wheat', 'bread', 'pasta', 'cracker'] },
+  { label: 'Fish', emoji: '\u{1F41F}', keywords: ['salmon', 'cod', 'tuna', 'tilapia', 'trout', 'sardine', 'fish'] },
+  { label: 'Shellfish', emoji: '\u{1F364}', keywords: ['shrimp', 'crab', 'lobster', 'prawn'] },
+  { label: 'Sesame', emoji: '\u{1FAD8}', keywords: ['sesame', 'tahini'] }
+];
+
+function fmtDateShort(d){
+  return d ? new Date(d + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+}
+
+function renderAllergenTracker(){
+  const state = loadFoodState();
+  const foodInfo = buildFoodInfo();
+
+  const triedFoods = [];
+  Object.keys(state).forEach(id => {
+    const e = state[id];
+    const info = foodInfo[id];
+    if (e && e.checked && info){
+      triedFoods.push({ name: info.name.toLowerCase(), date: e.date });
+    }
+  });
+
+  const list = document.getElementById('allergen-status-list');
+  list.innerHTML = '';
+
+  ALLERGEN_DEFS.forEach(a => {
+    const match = triedFoods.find(f => a.keywords.some(k => f.name.includes(k)));
+    const item = document.createElement('div');
+    item.className = 'allergen-item' + (match ? ' introduced' : '');
+    item.innerHTML =
+      '<span class="allergen-emoji">' + a.emoji + '</span>' +
+      '<div class="allergen-body">' +
+      '<div class="allergen-label">' + a.label + '</div>' +
+      '<div class="allergen-status">' + (match ? 'Introduced \u2014 ' + fmtDateShort(match.date) : 'Not tried yet') + '</div>' +
+      '</div>';
+    list.appendChild(item);
+  });
+}
 
 /* ---------------- Allergies tab ---------------- */
 function renderAllergies(){

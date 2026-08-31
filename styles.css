@@ -1124,6 +1124,44 @@
     pointer-events:none;
   }
 
+  /* ---------- Safety tab ---------- */
+  .allergen-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 26px;
+  }
+
+  .allergen-item{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+
+  .allergen-item.introduced{
+    border-color: var(--fern);
+    background: var(--fern-dim);
+  }
+
+  .allergen-emoji{ font-size: 24px; }
+  .allergen-label{ font-family: 'Domine', serif; font-size: 14px; color: var(--ink); }
+  .allergen-status{ font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .allergen-item.introduced .allergen-status{ color: var(--fern); font-weight: 600; }
+
+  .hazard-list{ margin-bottom: 26px; }
+  .hazard-item{
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .hazard-item:last-child{ border-bottom: none; }
+  .hazard-item strong{ color: var(--ink); }
+
   /* ---------- Guide tab ---------- */
   .guide-intro{
     color: var(--ink-soft);
