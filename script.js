@@ -546,13 +546,13 @@ function renderBirthdayBanner(){
 
   if (diffDays > 1){
     el.textContent = '\u{1F382} ' + diffDays + ' days until Jaxon\u2019s 1st birthday!';
-    el.style.display = '';
+    el.style.display = 'block';
   } else if (diffDays === 1){
     el.textContent = '\u{1F382} 1 day until Jaxon\u2019s 1st birthday!';
-    el.style.display = '';
+    el.style.display = 'block';
   } else if (diffDays === 0){
     el.textContent = '\u{1F389} Happy 1st birthday, Jaxon!';
-    el.style.display = '';
+    el.style.display = 'block';
   } else {
     el.style.display = 'none';
   }
@@ -1922,7 +1922,7 @@ document.getElementById('recap-btn').addEventListener('click', () => {
 /* ---------------- Init ---------------- */
 if (isReadOnly()){
   document.body.classList.add('read-only');
-  document.getElementById('readonly-banner').style.display = '';
+  document.getElementById('readonly-banner').style.display = 'block';
 }
 applyTheme(loadTheme());
 renderAge();
